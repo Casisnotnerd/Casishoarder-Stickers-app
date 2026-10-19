@@ -10,6 +10,7 @@ interface Ctx extends Snapshot {
   photos: PhotoStore;
   reload: () => Promise<void>;
   demo: boolean;
+  error: string | null;
 }
 
 const C = createContext<Ctx | null>(null);
@@ -25,13 +26,19 @@ export function DataProvider({ children, repo, photos }: { children: ReactNode; 
   const r = useMemo(() => repo ?? (supabase ? new SupabaseRepo() : new MemoryRepo()), [repo, supabase]);
   const p = useMemo(() => photos ?? (supabase ? new SupabasePhotoStore(supabase) : new MemoryPhotoStore()), [photos, supabase]);
   const [data, setData] = useState<Snapshot>({ artists: [], sheets: [], orders: [], lines: [], usages: [] });
+  const [error, setError] = useState<string | null>(null);
 
   const reload = async () => {
-    const s = await r.loadAll();
-    setData(s);
+    try {
+      const s = await r.loadAll();
+      setData(s);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   };
 
   useEffect(() => { void reload(); }, [r]);
 
-  return <C.Provider value={{ repo: r, photos: p, reload, demo, ...data }}>{children}</C.Provider>;
+  return <C.Provider value={{ repo: r, photos: p, reload, demo, error, ...data }}>{children}</C.Provider>;
 }

@@ -44,7 +44,8 @@ export class SupabaseRepo implements Repo {
       c.from('order_lines').select('*'),
       c.from('usages').select('*'),
     ]);
-    if (a.error || s.error || o.error || l.error || u.error) throw new Error('load failed');
+    const err = a.error || s.error || o.error || l.error || u.error;
+    if (err) throw new Error('load failed: ' + (err.message ?? JSON.stringify(err)));
     return {
       artists: (a.data ?? []).map(rowToArtist),
       sheets: (s.data ?? []).map(rowToSheet),

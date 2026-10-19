@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useData } from './DataProvider';
 
 const tabs = [
   { to: '/', label: 'Collection' },
@@ -10,8 +11,10 @@ const tabs = [
 
 export function Shell() {
   const loc = useLocation();
+  const d = useData();
   return (
     <>
+      {d.error && <div style={{ background: '#f8d7da', color: '#721c24', padding: '0.5rem 1rem' }}>Error: {d.error}</div>}
       <Outlet />
       <nav className="tabs">
         {tabs.map((t) => (
