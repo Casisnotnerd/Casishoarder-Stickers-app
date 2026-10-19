@@ -96,3 +96,12 @@ on conflict (id) do nothing;
 create policy own_files on storage.objects for all to authenticated
   using (bucket_id in ('photos', 'thumbs') and (storage.foldername(name))[1] = auth.uid()::text)
   with check (bucket_id in ('photos', 'thumbs') and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Grant table privileges to anon/authenticated (RLS still enforces row access).
+grant usage on schema public to anon, authenticated;
+grant all on all tables in schema public to anon, authenticated;
+grant all on all sequences in schema public to anon, authenticated;
+grant all on all routines in schema public to anon, authenticated;
+alter default privileges in schema public grant all on tables to anon, authenticated;
+alter default privileges in schema public grant all on sequences to anon, authenticated;
+alter default privileges in schema public grant all on routines to anon, authenticated;
