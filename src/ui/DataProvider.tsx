@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Repo, PhotoStore } from '../data/repo';
 import type { Snapshot } from '../data/repo';
 import { MemoryRepo, MemoryPhotoStore } from '../data/memoryRepo';
@@ -22,8 +22,8 @@ export function useData(): Ctx {
 
 export function DataProvider({ children, repo, photos }: { children: ReactNode; repo?: Repo; photos?: PhotoStore }) {
   const demo = !supabase && !repo;
-  const r = repo ?? (supabase ? new SupabaseRepo() : new MemoryRepo());
-  const p = photos ?? (supabase ? new SupabasePhotoStore(supabase) : new MemoryPhotoStore());
+  const r = useMemo(() => repo ?? (supabase ? new SupabaseRepo() : new MemoryRepo()), [repo, supabase]);
+  const p = useMemo(() => photos ?? (supabase ? new SupabasePhotoStore(supabase) : new MemoryPhotoStore()), [photos, supabase]);
   const [data, setData] = useState<Snapshot>({ artists: [], sheets: [], orders: [], lines: [], usages: [] });
 
   const reload = async () => {
