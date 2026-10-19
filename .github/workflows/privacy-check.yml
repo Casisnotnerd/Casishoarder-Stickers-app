@@ -1,0 +1,19 @@
+name: Share privacy check
+on:
+  workflow_run:
+    workflows: [Deploy to GitHub Pages]
+    types: [completed]
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-share-privacy.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SHARE_TOKEN: ${{ secrets.SHARE_TOKEN }}
