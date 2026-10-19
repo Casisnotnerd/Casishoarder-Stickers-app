@@ -16,8 +16,8 @@ test('toCsv starts with a UTF-8 BOM so Excel shows Korean', () => {
 test('collectionCsv: one row per order line, SGD per sheet', () => {
   const artists: Artist[] = [{ id: 'aJ', name: 'JUIMJUIM', aliases: [] }];
   const sheets: Sheet[] = [
-    { id: 'egg', artistId: 'aJ', title: '계란이 좋아', tags: ['food', 'korean'], photoPath: null, thumbPath: null, photoBytes: 0, createdAt: '' },
-    { id: 'none', artistId: null, title: 'No order yet', tags: [], photoPath: null, thumbPath: null, photoBytes: 0, createdAt: '' },
+    { id: 'egg', artistId: 'aJ', title: '계란이 좋아', tags: ['food', 'korean'], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt: '' },
+    { id: 'none', artistId: null, title: 'No order yet', tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt: '' },
   ];
   const orders: Order[] = [{
     id: 'o', orderDate: '2026-10-19', shop: 'Shop, Seoul', currency: 'KRW', shippingMinor: 3000,

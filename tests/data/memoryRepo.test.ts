@@ -6,7 +6,7 @@ const krwOrder: NewOrder = {
   totalMinor: 15000, sgdPaidMinor: 1560, estimated: false,
 };
 const sheetInput = (title: string, artistId: string | null = null) => ({
-  artistId, title, tags: [], photoPath: null, thumbPath: null, photoBytes: 0,
+  artistId, title, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null,
 });
 
 test('deleteSheet removes lines and usages, and orders left empty', async () => {

@@ -3,7 +3,7 @@ import { EMPTY_FILTER, filterSheets, allTags } from '../../src/domain/filter';
 
 const artists: Artist[] = [{ id: 'aP', name: 'papermilio', aliases: ['paper milio'] }];
 const mk = (id: string, title: string, tags: string[], createdAt: string): Sheet => ({
-  id, artistId: 'aP', title, tags, photoPath: null, thumbPath: null, photoBytes: 0, createdAt,
+  id, artistId: 'aP', title, tags, photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt,
 });
 const sheets = [
   mk('w', 'Winter', ['seasonal'], '2026-01-01T00:00:00Z'),

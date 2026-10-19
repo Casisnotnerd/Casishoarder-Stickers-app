@@ -16,6 +16,7 @@ create table public.sheets (
   photo_path text,
   thumb_path text,
   photo_bytes integer not null default 0,
+  image_hash text,
   created_at timestamptz not null default now()
 );
 

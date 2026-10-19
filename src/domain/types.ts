@@ -12,6 +12,7 @@ export interface Sheet {
   photoPath: string | null;
   thumbPath: string | null;
   photoBytes: number;
+  imageHash: string | null;
   createdAt: string;
 }
 

@@ -6,7 +6,7 @@ const artists: Artist[] = [
   { id: 'aP', name: 'papermilio', aliases: [] },
 ];
 const sheet = (id: string, artistId: string | null): Sheet => ({
-  id, artistId, title: id, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, createdAt: '2026-01-01T00:00:00Z',
+  id, artistId, title: id, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt: '2026-01-01T00:00:00Z',
 });
 const sheets = [sheet('egg', 'aJ'), sheet('dumpling', 'aJ'), sheet('winter', 'aP'), sheet('mystery', null)];
 const base: Omit<Order, 'id'> = {

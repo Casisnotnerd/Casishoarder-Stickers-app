@@ -2,8 +2,8 @@ import type { Artist, Sheet } from '../../src/domain/types';
 import { findSameTitle, findArtistByName } from '../../src/domain/duplicates';
 
 const sheets: Sheet[] = [
-  { id: 'w', artistId: 'aP', title: 'Winter', tags: [], photoPath: null, thumbPath: null, photoBytes: 0, createdAt: '' },
-  { id: 'x', artistId: null, title: '계란이 좋아', tags: [], photoPath: null, thumbPath: null, photoBytes: 0, createdAt: '' },
+  { id: 'w', artistId: 'aP', title: 'Winter', tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt: '' },
+  { id: 'x', artistId: null, title: '계란이 좋아', tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt: '' },
 ];
 const artists: Artist[] = [{ id: 'aJ', name: 'JUIMJUIM', aliases: ['Juimsuim'] }];
 

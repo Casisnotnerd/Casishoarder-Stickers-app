@@ -1,6 +1,7 @@
 import type { PhotoStore, Repo } from '../data/repo';
 import { toMinor } from '../domain/currency';
 import { findArtistByName } from '../domain/duplicates';
+import { computeImageHash } from '../image/hash';
 import { parseOrderForm, type OrderForm } from '../domain/orderForm';
 import type { Artist } from '../domain/types';
 
@@ -63,6 +64,7 @@ export async function saveOrder(args: {
       }
       const photo = d.photo ? await photos.upload('photos', d.photo) : null;
       const thumb = d.thumb ? await photos.upload('thumbs', d.thumb) : null;
+      const imageHash = d.thumb ? await computeImageHash(d.thumb) : null;
       const sheet = await repo.createSheet({
         artistId,
         title: d.title.trim(),
@@ -70,6 +72,7 @@ export async function saveOrder(args: {
         photoPath: photo?.path ?? null,
         thumbPath: thumb?.path ?? null,
         photoBytes: (photo?.bytes ?? 0) + (thumb?.bytes ?? 0),
+        imageHash,
       });
       sheetId = sheet.id;
     }

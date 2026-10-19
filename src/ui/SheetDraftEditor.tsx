@@ -3,6 +3,7 @@ import type { DraftLine } from './saveOrder';
 import { CropBox } from './CropBox';
 import { cropToJpeg, loadImage, PHOTO, THUMB } from '../image/crop';
 import { fullRect, type Rect } from '../image/geometry';
+import { computeImageHash, hammingDistance } from '../image/hash';
 import { findArtistByName, findSameTitle } from '../domain/duplicates';
 import { copiesOwned } from '../domain/holdings';
 import { useData } from './DataProvider';
@@ -25,11 +26,56 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
   const [existingSheetId, setExisting] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [imageHash, setImageHash] = useState<string | null>(null);
+  const [ocrText, setOcrText] = useState<string>('');
+  const [ocrBusy, setOcrBusy] = useState(false);
 
   useEffect(() => () => { if (src) URL.revokeObjectURL(src); }, [src]);
 
+  useEffect(() => {
+    if (!img || !rect || existingSheetId) { setOcrText(''); return; }
+    let cancelled = false;
+    setOcrBusy(true);
+    (async () => {
+      try {
+        const photo = await cropToJpeg(img, rect, PHOTO.maxSide, PHOTO.quality);
+        const { runOcr } = await import('../image/ocr');
+        const text = await runOcr(photo);
+        if (cancelled) return;
+        setOcrText(text);
+        if (text && !title.trim()) {
+          const firstLine = text.split(/\n/).map((l) => l.trim()).find((l) => l.length > 0);
+          if (firstLine) setTitle(firstLine);
+        }
+      } catch {
+        if (!cancelled) setOcrText('');
+      } finally {
+        if (!cancelled) setOcrBusy(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [img, rect, existingSheetId]);
+
+  useEffect(() => {
+    if (!img || !rect || existingSheetId) { setImageHash(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const thumb = await cropToJpeg(img, rect, THUMB.maxSide, THUMB.quality);
+        const h = await computeImageHash(thumb);
+        if (!cancelled) setImageHash(h);
+      } catch {
+        if (!cancelled) setImageHash(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [img, rect, existingSheetId]);
+
   const artistId = findArtistByName(artistName, data.artists)?.id ?? null;
   const same = !dismissed && !existingSheetId ? findSameTitle(title, artistId, data.sheets) : null;
+  const similarImage = !dismissed && !existingSheetId && imageHash
+    ? data.sheets.find((s) => s.imageHash && hammingDistance(s.imageHash, imageHash) <= 10) ?? null
+    : null;
   const existing = existingSheetId ? data.sheets.find((s) => s.id === existingSheetId) : null;
 
   const pick = async (file: File | undefined) => {
@@ -65,6 +111,13 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
       {img && src && rect && !existingSheetId && (
         <CropBox src={src} naturalW={img.width} naturalH={img.height} value={rect} onChange={setRect} />
       )}
+      {img && !existingSheetId && (
+        <div className="card">
+          <p className="hint">OCR {ocrBusy ? '(reading text...)' : ''}</p>
+          {ocrText && <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>{ocrText}</pre>}
+          {!ocrText && !ocrBusy && <p className="hint">No text detected.</p>}
+        </div>
+      )}
       {existing ? (
         <p className="warn">Adding copies to <b>{existing.title}</b>.{' '}
           <button onClick={() => setExisting(null)}>Undo</button></p>
@@ -76,6 +129,15 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
               You already have <b>{same.title}</b> ({copiesOwned(same.id, data.lines, data.usages)} copies).
               <div>
                 <button onClick={() => setExisting(same.id)}>Add copies to it</button>
+                <button onClick={() => setDismissed(true)}>It's a different sheet</button>
+              </div>
+            </div>
+          )}
+          {similarImage && similarImage.id !== same?.id && (
+            <div className="warn">
+              This photo looks like <b>{similarImage.title}</b> you already have.
+              <div>
+                <button onClick={() => setExisting(similarImage.id)}>Add copies to it</button>
                 <button onClick={() => setDismissed(true)}>It's a different sheet</button>
               </div>
             </div>

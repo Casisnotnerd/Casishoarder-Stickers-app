@@ -13,7 +13,7 @@ function rowToArtist(r: any): Artist {
 function rowToSheet(r: any): Sheet {
   return {
     id: r.id, artistId: r.artist_id, title: r.title, tags: r.tags ?? [],
-    photoPath: r.photo_path, thumbPath: r.thumb_path, photoBytes: r.photo_bytes ?? 0, createdAt: r.created_at,
+    photoPath: r.photo_path, thumbPath: r.thumb_path, photoBytes: r.photo_bytes ?? 0, imageHash: r.image_hash ?? null, createdAt: r.created_at,
   };
 }
 function rowToOrder(r: any): Order {
@@ -79,6 +79,7 @@ export class SupabaseRepo implements Repo {
     const { data, error } = await c.from('sheets').insert({
       artist_id: input.artistId, title: input.title, tags: input.tags,
       photo_path: input.photoPath, thumb_path: input.thumbPath, photo_bytes: input.photoBytes,
+      image_hash: input.imageHash,
     }).select().single();
     if (error || !data) throw new Error(error?.message ?? 'create sheet failed');
     return rowToSheet(data);
