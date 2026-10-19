@@ -29,6 +29,7 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
   const [imageHash, setImageHash] = useState<string | null>(null);
   const [ocrText, setOcrText] = useState<string>('');
   const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrError, setOcrError] = useState<string>('');
 
   useEffect(() => () => { if (src) URL.revokeObjectURL(src); }, [src]);
 
@@ -43,12 +44,13 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
         const text = await runOcr(photo);
         if (cancelled) return;
         setOcrText(text);
+        setOcrError('');
         if (text && !title.trim()) {
           const firstLine = text.split(/\n/).map((l) => l.trim()).find((l) => l.length > 0);
           if (firstLine) setTitle(firstLine);
         }
-      } catch {
-        if (!cancelled) setOcrText('');
+      } catch (e) {
+        if (!cancelled) { setOcrText(''); setOcrError(e instanceof Error ? e.message : String(e)); }
       } finally {
         if (!cancelled) setOcrBusy(false);
       }
@@ -114,8 +116,9 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
       {img && !existingSheetId && (
         <div className="card">
           <p className="hint">OCR {ocrBusy ? '(reading text...)' : ''}</p>
+          {ocrError && <p className="error">{ocrError}</p>}
           {ocrText && <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>{ocrText}</pre>}
-          {!ocrText && !ocrBusy && <p className="hint">No text detected.</p>}
+          {!ocrText && !ocrBusy && !ocrError && <p className="hint">No text detected.</p>}
         </div>
       )}
       {existing ? (
