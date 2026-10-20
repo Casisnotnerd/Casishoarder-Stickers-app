@@ -16,8 +16,12 @@ export class MemoryRepo implements Repo {
     return `${prefix}-${this.n}`;
   }
 
+  private lastStamp = 0;
+
+  /** Real time, but always strictly increasing so "newest first" is stable even within one millisecond. */
   private stamp(): string {
-    return new Date(Date.UTC(2026, 0, 1) + this.n * 1000).toISOString();
+    this.lastStamp = Math.max(Date.now(), this.lastStamp + 1);
+    return new Date(this.lastStamp).toISOString();
   }
 
   async loadAll(): Promise<Snapshot> {

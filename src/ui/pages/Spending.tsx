@@ -80,7 +80,7 @@ export function Spending() {
           const now = new Date();
           const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
           return (
-            <div key={m} className="card" style={{ padding: 6, textAlign: 'center', background: m === cur ? 'var(--tab, #fff3cd)' : undefined }}>
+            <div key={m} className="card" style={{ padding: 6, textAlign: 'center', background: m === cur ? 'var(--accent-soft)' : undefined }}>
               <div className="hint" style={{ fontSize: '0.75rem' }}>{m.slice(5)}</div>
               <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{formatMoney(amt, 'SGD')}</div>
             </div>
@@ -93,7 +93,7 @@ export function Spending() {
           <h2>By artist</h2>
           <Bars items={s.byArtist} colorOf={(name) => {
             const id = idByName.get(name);
-            return id ? artistColor(id).tab : undefined;
+            return id ? artistColor(id).ink : undefined;
           }} />
         </>
       )}

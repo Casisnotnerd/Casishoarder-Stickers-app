@@ -1,19 +1,26 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowDownWideNarrow, Search, Sparkles } from 'lucide-react';
 import type { Sheet } from '../../domain/types';
 import { EMPTY_FILTER, allTags, filterSheets, type SheetFilter } from '../../domain/filter';
 import { copiesOwned } from '../../domain/holdings';
 import { toMinor } from '../../domain/currency';
 import { artistColor } from '../../domain/artistColor';
+import { addedLabel, addedThisMonth, SORT_LABELS, sortSheets, type SortOrder } from '../../domain/journal';
 import { useData } from '../DataProvider';
 import { usePhotoUrl } from '../usePhotoUrl';
 
-export function Collection() {
+const isFiltering = (f: SheetFilter) =>
+  !!(f.text.trim() || f.artistId || f.tag || f.dateFrom || f.dateTo || f.minSgdMinor !== null || f.maxSgdMinor !== null);
+
+export function Collection({ searchMode = false }: { searchMode?: boolean }) {
   const d = useData();
   const [f, setF] = useState<SheetFilter>(EMPTY_FILTER);
+  const [order, setOrder] = useState<SortOrder>('newest');
   const [minS, setMinS] = useState('');
   const [maxS, setMaxS] = useState('');
-  const shown = useMemo(() => filterSheets(f, d), [f, d]);
+  const filtered = useMemo(() => filterSheets(f, d), [f, d]);
+  const shown = useMemo(() => sortSheets(filtered, order, d.lines, d.usages), [filtered, order, d.lines, d.usages]);
   const tags = useMemo(() => allTags(d.sheets), [d.sheets]);
   const artistName = useMemo(() => new Map(d.artists.map((a) => [a.id, a.name])), [d.artists]);
   const artists = useMemo(() => {
@@ -22,18 +29,47 @@ export function Collection() {
       .filter((a) => { const n = a.name.trim().toLowerCase(); if (seen.has(n)) return false; seen.add(n); return true; })
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [d.artists]);
-  const totalCopies = useMemo(
-    () => d.sheets.reduce((n, s) => n + Math.max(0, copiesOwned(s.id, d.lines, d.usages)), 0),
-    [d.sheets, d.lines, d.usages],
-  );
+  const thisMonth = useMemo(() => addedThisMonth(d.sheets), [d.sheets]);
+  const filtering = isFiltering(f);
 
   return (
-    <main className="page">
-      <h1>Collection</h1>
-      <p className="sub">{d.sheets.length} sheets · {totalCopies} copies · {d.artists.length} artists</p>
+    <main className="page journal">
+      {searchMode ? (
+        <header className="journal-head">
+          <div>
+            <h1>Find a little favourite.</h1>
+            <p className="sub">Search all {d.sheets.length} sheets in your collection.</p>
+          </div>
+        </header>
+      ) : (
+        <header className="journal-head">
+          <div>
+            <p className="brand">Sticker Shelf</p>
+            <h1>Your sticker story.</h1>
+          </div>
+          <Link to="/settings" className="avatar" aria-label="Settings">C</Link>
+        </header>
+      )}
 
-      <input className="search" type="search" placeholder="Search title, artist, tag" value={f.text}
-        onChange={(e) => setF({ ...f, text: e.target.value })} />
+      <label className="searchbox">
+        <Search size={18} aria-hidden="true" />
+        <input type="search" aria-label="Search" placeholder="Find a sticker, artist or tag" value={f.text}
+          autoFocus={searchMode} key={searchMode ? 'search' : 'browse'}
+          onChange={(e) => setF({ ...f, text: e.target.value })} />
+      </label>
+
+      {!searchMode && (
+        <section className="summary">
+          <div>
+            <p className="summary-count">{d.sheets.length} little {d.sheets.length === 1 ? 'joy' : 'joys'}</p>
+            <p className="summary-month">+{thisMonth} {thisMonth === 1 ? 'sheet' : 'sheets'} tucked away this month</p>
+          </div>
+          <div className="note" aria-hidden="true">
+            <Sparkles size={25} strokeWidth={1.5} />
+            <span>keep happy</span>
+          </div>
+        </section>
+      )}
 
       <div className="filters">
         <select aria-label="Tag" className="tagselect" value={f.tag ?? ''}
@@ -47,8 +83,9 @@ export function Collection() {
         </label>
       </div>
 
-      <div className="row" style={{ marginBottom: 8 }}>
-        <select aria-label="Artist" value={f.artistId ?? ''} onChange={(e) => setF({ ...f, artistId: e.target.value || null })}>
+      <div className="filters">
+        <select aria-label="Artist" className="tagselect" value={f.artistId ?? ''}
+          onChange={(e) => setF({ ...f, artistId: e.target.value || null })}>
           <option value="">All artists</option>
           {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
@@ -56,14 +93,25 @@ export function Collection() {
         <button className="tab" aria-pressed={f.showUsedUp} onClick={() => setF({ ...f, showUsedUp: true })}>Used up</button>
       </div>
 
+      <div className="section-head">
+        <h2>{filtering || searchMode ? `${shown.length} little ${shown.length === 1 ? 'find' : 'finds'}` : 'Latest additions'}</h2>
+        <label className="sort">
+          <span className="visually-hidden">Sort</span>
+          <select aria-label="Sort" value={order} onChange={(e) => setOrder(e.target.value as SortOrder)}>
+            {(Object.keys(SORT_LABELS) as SortOrder[]).map((k) => <option key={k} value={k}>{SORT_LABELS[k]}</option>)}
+          </select>
+          <ArrowDownWideNarrow size={15} aria-hidden="true" />
+        </label>
+      </div>
+
       <div className="shelf">
         {shown.map((s) => (
-          <Entry key={s.id} sheet={s} artist={s.artistId ? artistName.get(s.artistId) ?? '' : ''}
+          <Card key={s.id} sheet={s} artist={s.artistId ? artistName.get(s.artistId) ?? '' : ''}
             copies={copiesOwned(s.id, d.lines, d.usages)} />
         ))}
-        {d.sheets.length === 0 && <p className="empty">Your shelf is empty. Tap Add to log your first sheet.</p>}
-        {d.sheets.length > 0 && shown.length === 0 && <p className="empty">No sheets match.</p>}
       </div>
+      {d.sheets.length === 0 && <p className="empty">Your shelf is empty. Tap + to log your first sheet.</p>}
+      {d.sheets.length > 0 && shown.length === 0 && <p className="empty">No sheets match.</p>}
 
       <details className="more">
         <summary>Filter by date or price</summary>
@@ -80,18 +128,20 @@ export function Collection() {
   );
 }
 
-function Entry({ sheet, artist, copies }: { sheet: Sheet; artist: string; copies: number }) {
+function Card({ sheet, artist, copies }: { sheet: Sheet; artist: string; copies: number }) {
   const url = usePhotoUrl('thumbs', sheet.thumbPath);
   const c = artistColor(sheet.artistId);
   const label = copies > 0 ? `${copies} ${copies === 1 ? 'copy' : 'copies'}` : 'Used up';
+  const added = addedLabel(sheet.createdAt);
   return (
-    <Link className={`entry${copies > 0 ? '' : ' usedup'}`} to={`/sheet/${sheet.id}`} style={{ '--tab': c.tab } as CSSProperties}>
-      {url ? <img className="thumb" src={url} alt="" loading="lazy" /> : <div className="thumb" />}
-      <div className="who">
-        <div className="title">{sheet.title}</div>
-        <div className="artist">{artist || 'Unknown artist'}</div>
+    <Link className={`sticker${copies > 0 ? '' : ' usedup'}`} to={`/sheet/${sheet.id}`} style={{ '--tab': c.tab } as CSSProperties}>
+      <div className="mount">
+        {url ? <img src={url} alt="" loading="lazy" /> : null}
+        {added && <span className="badge">{added}</span>}
+        <span className="copies" aria-label={label}>{copies > 0 ? `×${copies}` : 'Used up'}</span>
       </div>
-      <div className="count" aria-label={label}>{copies > 0 ? copies : 'Used up'}</div>
+      <div className="title">{sheet.title}</div>
+      <div className="artist">{artist || 'Unknown artist'}</div>
     </Link>
   );
 }

@@ -29,7 +29,7 @@ test('shows owned sheets with copy count; used-up hidden until toggled', async (
   expect(screen.queryByText('Spring')).toBeNull();
   fireEvent.click(screen.getByLabelText('Show used up'));
   expect(screen.getByText('Spring')).toBeTruthy();
-  fireEvent.change(screen.getByPlaceholderText('Search title, artist, tag'), { target: { value: 'win' } });
+  fireEvent.change(screen.getByPlaceholderText('Find a sticker, artist or tag'), { target: { value: 'win' } });
   expect(screen.queryByText('Spring')).toBeNull();
 });
 
@@ -47,7 +47,7 @@ test('search and tag dropdown sit above the list and the tag dropdown filters', 
     </MemoryRouter>,
   );
   await screen.findByText('Winter');
-  const search = screen.getByPlaceholderText('Search title, artist, tag');
+  const search = screen.getByPlaceholderText('Find a sticker, artist or tag');
   const tag = screen.getByLabelText('Tag');
   const list = container.querySelector('.shelf')!;
   // both controls come before the list in the page

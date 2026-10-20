@@ -83,7 +83,7 @@ export function SheetDetail() {
   };
 
   return (
-    <main className="page">
+    <main className="page" style={{ '--tab': artistColor(sheet.artistId).tab } as CSSProperties}>
       {photoUrl ? <img className="detail-photo" src={photoUrl} alt={sheet.title} /> : null}
       {editing ? (
         <div className="card">

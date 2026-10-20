@@ -1,20 +1,21 @@
 export interface ArtistColor {
-  tab: string; // fill for the artist's tab / edge / chart bar
-  ink: string; // readable text colour on that fill
+  tab: string; // soft tint for the artist's tab, card mount and chart bar
+  ink: string; // readable text colour on that tint
 }
 
+// Warm pastel tints, starting from the Figma card colours (sage, lilac, peach, butter).
 export const ARTIST_PALETTE: ArtistColor[] = [
-  { tab: '#FFD84D', ink: '#4A3A00' }, // marigold
-  { tab: '#8FD3C1', ink: '#0D4A3C' }, // mint
-  { tab: '#F7A6C4', ink: '#6B1638' }, // peony
-  { tab: '#A9C7FF', ink: '#14336E' }, // sky
-  { tab: '#FFB27A', ink: '#6A2F05' }, // apricot
-  { tab: '#C6B3FF', ink: '#35206E' }, // lilac
-  { tab: '#B9E07A', ink: '#2F4A07' }, // lime
-  { tab: '#F28B82', ink: '#6A1410' }, // coral
+  { tab: '#E3E9DC', ink: '#3D5233' }, // sage
+  { tab: '#E9E3F1', ink: '#4A3870' }, // lilac
+  { tab: '#F2DFD0', ink: '#7A3E1E' }, // peach
+  { tab: '#F3E8C4', ink: '#6B5410' }, // butter
+  { tab: '#F3D9DC', ink: '#7A2E3A' }, // rose
+  { tab: '#DCE7F0', ink: '#2C4A63' }, // sky
+  { tab: '#D7EBE3', ink: '#245244' }, // mint
+  { tab: '#EADFCF', ink: '#5E4A2E' }, // sand
 ];
 
-const NONE: ArtistColor = { tab: '#D9D3EA', ink: '#3B2F5C' };
+const NONE: ArtistColor = { tab: '#ECE7DD', ink: '#30342C' };
 
 /** Stable colour per artist id (FNV-1a hash → palette slot). */
 export function artistColor(artistId: string | null): ArtistColor {

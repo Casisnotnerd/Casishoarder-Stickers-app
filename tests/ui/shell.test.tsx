@@ -16,3 +16,16 @@ test('demo shell shows banner and bottom tabs', async () => {
   expect(screen.getByRole('link', { name: 'Spending' })).toBeTruthy();
   expect(screen.getByRole('link', { name: 'Add' })).toBeTruthy();
 });
+
+test('Search tab opens the collection with the search box focused', async () => {
+  render(
+    <MemoryRouter initialEntries={['/search']}>
+      <DataProvider repo={new MemoryRepo()} photos={new MemoryPhotoStore()}>
+        <Shell demo />
+      </DataProvider>
+    </MemoryRouter>,
+  );
+  expect(await screen.findByRole('heading', { name: 'Find a little favourite.' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Search' })).toBeTruthy();
+  expect(document.activeElement).toBe(screen.getByPlaceholderText('Find a sticker, artist or tag'));
+});
