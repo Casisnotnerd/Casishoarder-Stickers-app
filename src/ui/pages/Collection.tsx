@@ -87,8 +87,8 @@ function Entry({ sheet, artist, copies }: { sheet: Sheet; artist: string; copies
   return (
     <Link className={`entry${copies > 0 ? '' : ' usedup'}`} to={`/sheet/${sheet.id}`} style={{ '--tab': c.tab } as CSSProperties}>
       {url ? <img className="thumb" src={url} alt="" loading="lazy" /> : <div className="thumb" />}
-      <span className="sr-only">{sheet.title}</span>
       <div className="who">
+        <div className="title">{sheet.title}</div>
         <div className="artist">{artist || 'Unknown artist'}</div>
       </div>
       <div className="count" aria-label={label}>{copies > 0 ? copies : 'Used up'}</div>
