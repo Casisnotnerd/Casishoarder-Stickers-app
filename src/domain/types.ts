@@ -11,21 +11,21 @@ export interface Sheet {
   tags: string[];
   photoPath: string | null;
   thumbPath: string | null;
-  photoBytes: number;
-  imageHash: string | null;
-  createdAt: string;
+  photoBytes: number; // photo + thumbnail bytes, for the storage meter
+  imageHash: string | null; // perceptual hash for duplicate detection
+  createdAt: string; // ISO timestamp
 }
 
 export interface Order {
   id: string;
-  orderDate: string | null;
+  orderDate: string | null; // YYYY-MM-DD
   shop: string | null;
-  currency: string;
-  shippingMinor: number;
-  totalMinor: number | null;
-  sgdPaidMinor: number | null;
+  currency: string; // ISO 4217, e.g. KRW, SGD
+  shippingMinor: number; // in order currency minor units
+  totalMinor: number | null; // order total as charged, order currency
+  sgdPaidMinor: number | null; // SGD actually paid, cents
   estimated: boolean;
-  isUnknown: boolean;
+  isUnknown: boolean; // the per-user "Unknown order" for old sheets
   createdAt: string;
 }
 
@@ -34,7 +34,7 @@ export interface OrderLine {
   orderId: string;
   sheetId: string;
   quantity: number;
-  priceMinor: number | null;
+  priceMinor: number | null; // listed price each, order currency
   estimated: boolean;
 }
 
@@ -42,7 +42,7 @@ export interface Usage {
   id: string;
   sheetId: string;
   quantity: number;
-  usedOn: string;
+  usedOn: string; // YYYY-MM-DD
 }
 
 export interface ShareLink {

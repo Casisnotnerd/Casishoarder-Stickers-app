@@ -49,6 +49,7 @@ export function shippingSgdMinor(order: Order, orderLines: OrderLine[]): number 
   return convert(order.shippingMinor, order, orderLines);
 }
 
+/** SGD per 1 unit of the order currency (e.g. 0.00104 SGD per ₩1). */
 export function derivedRate(order: Order, orderLines: OrderLine[]): number | null {
   const paid = effectiveSgdPaidMinor(order, orderLines);
   const base = rateBaseMinor(order, orderLines);

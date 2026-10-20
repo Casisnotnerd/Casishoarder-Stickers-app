@@ -106,3 +106,4 @@ grant all on all routines in schema public to anon, authenticated;
 alter default privileges in schema public grant all on tables to anon, authenticated;
 alter default privileges in schema public grant all on sequences to anon, authenticated;
 alter default privileges in schema public grant all on routines to anon, authenticated;
+

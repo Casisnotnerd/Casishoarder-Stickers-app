@@ -9,7 +9,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Sticker Vault',
+        name: 'Sticker Shelf',
         short_name: 'Stickers',
         start_url: '.',
         display: 'standalone',

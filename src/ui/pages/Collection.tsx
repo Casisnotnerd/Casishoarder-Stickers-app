@@ -1,35 +1,72 @@
-import { useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import { EMPTY_FILTER, filterSheets, allTags } from '../../domain/filter';
+import type { Sheet } from '../../domain/types';
+import { EMPTY_FILTER, allTags, filterSheets, type SheetFilter } from '../../domain/filter';
 import { copiesOwned } from '../../domain/holdings';
+import { toMinor } from '../../domain/currency';
+import { artistColor } from '../../domain/artistColor';
 import { useData } from '../DataProvider';
 import { usePhotoUrl } from '../usePhotoUrl';
-import { toMinor } from '../../domain/currency';
 
 export function Collection() {
   const d = useData();
-  const [f, setF] = useState(EMPTY_FILTER);
+  const [f, setF] = useState<SheetFilter>(EMPTY_FILTER);
   const [minS, setMinS] = useState('');
   const [maxS, setMaxS] = useState('');
-  const shown = filterSheets(f, d);
-  const artistName = new Map(d.artists.map((a) => [a.id, a.name]));
+  const shown = useMemo(() => filterSheets(f, d), [f, d]);
+  const tags = useMemo(() => allTags(d.sheets), [d.sheets]);
+  const artistName = useMemo(() => new Map(d.artists.map((a) => [a.id, a.name])), [d.artists]);
+  const artists = useMemo(() => [...d.artists].sort((a, b) => a.name.localeCompare(b.name)), [d.artists]);
+  const totalCopies = useMemo(
+    () => d.sheets.reduce((n, s) => n + Math.max(0, copiesOwned(s.id, d.lines, d.usages)), 0),
+    [d.sheets, d.lines, d.usages],
+  );
 
   return (
     <main className="page">
       <h1>Collection</h1>
-      <input placeholder="Search title, artist, tag..." value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })} />
-      <div className="row">
-        <select value={f.tag ?? ''} onChange={(e) => setF({ ...f, tag: e.target.value || null })}>
-          <option value="">All tags</option>
-          {allTags(d.sheets).map((t) => <option key={t} value={t}>{t}</option>)}
+      <p className="sub">{d.sheets.length} sheets · {totalCopies} copies · {d.artists.length} artists</p>
+
+      <input className="search" type="search" placeholder="Search title, artist, tag" value={f.text}
+        onChange={(e) => setF({ ...f, text: e.target.value })} />
+
+      <div className="filters">
+        <select aria-label="Tag" className="tagselect" value={f.tag ?? ''}
+          onChange={(e) => setF({ ...f, tag: e.target.value || null })}>
+          <option value="">{tags.length ? 'All tags' : 'No tags yet'}</option>
+          {tags.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <label>
           <input type="checkbox" checked={f.showUsedUp} onChange={(e) => setF({ ...f, showUsedUp: e.target.checked })} />
           Show used up
         </label>
       </div>
-      <details>
-        <summary className="hint">More filters (date, price)</summary>
+
+      <div className="tabstrip" role="group" aria-label="Artist">
+        <button className="tab" aria-pressed={f.artistId === null} onClick={() => setF({ ...f, artistId: null })}>All</button>
+        {artists.map((a) => {
+          const c = artistColor(a.id);
+          return (
+            <button key={a.id} className="tab artist" aria-pressed={f.artistId === a.id}
+              style={{ '--tab': c.tab, '--ink': c.ink } as CSSProperties}
+              onClick={() => setF({ ...f, artistId: f.artistId === a.id ? null : a.id })}>
+              {a.name}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="shelf">
+        {shown.map((s) => (
+          <Entry key={s.id} sheet={s} artist={s.artistId ? artistName.get(s.artistId) ?? '' : ''}
+            copies={copiesOwned(s.id, d.lines, d.usages)} />
+        ))}
+        {d.sheets.length === 0 && <p className="empty">Your shelf is empty. Tap Add to log your first sheet.</p>}
+        {d.sheets.length > 0 && shown.length === 0 && <p className="empty">No sheets match.</p>}
+      </div>
+
+      <details className="more">
+        <summary>Filter by date or price</summary>
         <div className="row">
           <label>Bought from<input type="date" value={f.dateFrom ?? ''} onChange={(e) => setF({ ...f, dateFrom: e.target.value || null })} /></label>
           <label>to<input type="date" value={f.dateTo ?? ''} onChange={(e) => setF({ ...f, dateTo: e.target.value || null })} /></label>
@@ -39,27 +76,22 @@ export function Collection() {
           <label>Max S$ each<input inputMode="decimal" value={maxS} onChange={(e) => { setMaxS(e.target.value); setF({ ...f, maxSgdMinor: toMinor(e.target.value, 'SGD') }); }} /></label>
         </div>
       </details>
-      {d.sheets.length === 0 && <p className="hint">No sheets yet. Tap Add to log your first one.</p>}
-      <div className="grid">
-        {shown.map((s) => (
-          <Tile key={s.id} sheet={s} artist={s.artistId ? artistName.get(s.artistId) ?? '' : ''}
-            copies={copiesOwned(s.id, d.lines, d.usages)} />
-        ))}
-      </div>
     </main>
   );
 }
 
-function Tile({ sheet, artist, copies }: { sheet: any; artist: string; copies: number }) {
+function Entry({ sheet, artist, copies }: { sheet: Sheet; artist: string; copies: number }) {
   const url = usePhotoUrl('thumbs', sheet.thumbPath);
+  const c = artistColor(sheet.artistId);
+  const label = copies > 0 ? `${copies} ${copies === 1 ? 'copy' : 'copies'}` : 'Used up';
   return (
-    <Link className="tile" to={`/sheet/${sheet.id}`}>
-      {url ? <img src={url} alt={sheet.title} loading="lazy" /> : <div className="noimg" />}
-      <div className="meta">
-        <span className="count">{copies > 0 ? copies : 'used up'}</span>
+    <Link className={`entry${copies > 0 ? '' : ' usedup'}`} to={`/sheet/${sheet.id}`} style={{ '--tab': c.tab } as CSSProperties}>
+      {url ? <img className="thumb" src={url} alt="" loading="lazy" /> : <div className="thumb" />}
+      <div className="who">
         <div className="title">{sheet.title}</div>
-        <div className="hint">{artist}</div>
+        <div className="artist">{artist || 'Unknown artist'}</div>
       </div>
+      <div className="count" aria-label={label}>{copies > 0 ? copies : 'Used up'}</div>
     </Link>
   );
 }

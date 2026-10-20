@@ -12,7 +12,7 @@ export function csvEscape(v: Cell): string {
 }
 
 export function toCsv(rows: Cell[][]): string {
-  return '\uFEFF' + rows.map((r) => r.map(csvEscape).join(',')).join('\r\n') + '\r\n';
+  return '﻿' + rows.map((r) => r.map(csvEscape).join(',')).join('\r\n') + '\r\n';
 }
 
 export interface CsvData {

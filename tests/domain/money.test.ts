@@ -13,9 +13,10 @@ const line = (l: Partial<OrderLine>): OrderLine => ({
   id: 'l1', orderId: 'o1', sheetId: 's1', quantity: 1, priceMinor: 3000, estimated: false, ...l,
 });
 
+// Spec example: ₩15,000 order (4 sheets × ₩3,000 + ₩3,000 shipping), S$15.60 paid.
 const krwLines = [line({ id: 'a', sheetId: 'sA', quantity: 3 }), line({ id: 'b', sheetId: 'sB', quantity: 1 })];
 
-test('spec example: 3000 sheet costs 3.12; rate 0.00104', () => {
+test('spec example: ₩3,000 sheet costs S$3.12; rate 0.00104', () => {
   const o = order({});
   expect(unitSgdMinor(krwLines[0], o, krwLines)).toBe(312);
   expect(lineSgdMinor(krwLines[0], o, krwLines)).toBe(936);

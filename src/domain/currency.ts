@@ -28,6 +28,12 @@ export function formatMoney(minor: number | null, code: string): string {
   const c = code.toUpperCase();
   if (minor === null) return c === 'SGD' ? 'S$ —' : `${c} —`;
   const exp = exponent(c);
+  if (c === 'SGD') {
+    // Always "S$" so it can't be mistaken for US dollars.
+    const n = new Intl.NumberFormat('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      .format(Math.abs(minor) / 100);
+    return `${minor < 0 ? '-' : ''}S$${n}`;
+  }
   return new Intl.NumberFormat('en-SG', {
     style: 'currency',
     currency: c,

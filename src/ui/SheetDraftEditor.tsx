@@ -34,8 +34,17 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
   useEffect(() => () => { if (src) URL.revokeObjectURL(src); }, [src]);
 
   useEffect(() => {
-    if (!img || !rect || existingSheetId) { setOcrText(''); return; }
+    if (!img || !rect || existingSheetId) { setImageHash(null); setOcrText(''); return; }
     let cancelled = false;
+    (async () => {
+      try {
+        const thumb = await cropToJpeg(img, rect, THUMB.maxSide, THUMB.quality);
+        const h = await computeImageHash(thumb);
+        if (!cancelled) setImageHash(h);
+      } catch {
+        if (!cancelled) setImageHash(null);
+      }
+    })();
     setOcrBusy(true);
     (async () => {
       try {
@@ -53,21 +62,6 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
         if (!cancelled) { setOcrText(''); setOcrError(e instanceof Error ? e.message : String(e)); }
       } finally {
         if (!cancelled) setOcrBusy(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [img, rect, existingSheetId]);
-
-  useEffect(() => {
-    if (!img || !rect || existingSheetId) { setImageHash(null); return; }
-    let cancelled = false;
-    (async () => {
-      try {
-        const thumb = await cropToJpeg(img, rect, THUMB.maxSide, THUMB.quality);
-        const h = await computeImageHash(thumb);
-        if (!cancelled) setImageHash(h);
-      } catch {
-        if (!cancelled) setImageHash(null);
       }
     })();
     return () => { cancelled = true; };
@@ -158,7 +152,7 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
       </div>
       <label><input type="checkbox" checked={estimated} onChange={(e) => setEstimated(e.target.checked)} />Price is a rough estimate</label>
       <button className="primary" disabled={busy || (!existingSheetId && !title.trim())} onClick={() => void done()}>
-        {busy ? 'Preparing photo...' : 'Add to list'}
+        {busy ? 'Preparing photo…' : 'Add to list'}
       </button>
       <button onClick={onCancel}>Cancel</button>
     </div>

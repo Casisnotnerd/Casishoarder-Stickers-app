@@ -1,44 +1,43 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { Repo, PhotoStore } from '../data/repo';
-import type { Snapshot } from '../data/repo';
-import { MemoryRepo, MemoryPhotoStore } from '../data/memoryRepo';
-import { supabase } from '../data/supabaseClient';
-import { SupabaseRepo, SupabasePhotoStore } from '../data/supabaseRepo';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { PhotoStore, Repo, Snapshot } from '../data/repo';
 
-interface Ctx extends Snapshot {
+const EMPTY: Snapshot = { artists: [], sheets: [], orders: [], lines: [], usages: [] };
+
+export interface DataValue extends Snapshot {
   repo: Repo;
   photos: PhotoStore;
-  reload: () => Promise<void>;
-  demo: boolean;
+  loading: boolean;
   error: string | null;
+  reload: () => Promise<void>;
 }
 
-const C = createContext<Ctx | null>(null);
+const Ctx = createContext<DataValue | null>(null);
 
-export function useData(): Ctx {
-  const v = useContext(C);
-  if (!v) throw new Error('no data provider');
-  return v;
-}
-
-export function DataProvider({ children, repo, photos }: { children: ReactNode; repo?: Repo; photos?: PhotoStore }) {
-  const demo = !supabase && !repo;
-  const r = useMemo(() => repo ?? (supabase ? new SupabaseRepo() : new MemoryRepo()), [repo, supabase]);
-  const p = useMemo(() => photos ?? (supabase ? new SupabasePhotoStore(supabase) : new MemoryPhotoStore()), [photos, supabase]);
-  const [data, setData] = useState<Snapshot>({ artists: [], sheets: [], orders: [], lines: [], usages: [] });
+export function DataProvider({ repo, photos, children }: { repo: Repo; photos: PhotoStore; children: ReactNode }) {
+  const [snap, setSnap] = useState<Snapshot>(EMPTY);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const reload = async () => {
+  const reload = useCallback(async () => {
     try {
-      const s = await r.loadAll();
-      setData(s);
+      setSnap(await repo.loadAll());
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [repo]);
 
-  useEffect(() => { void reload(); }, [r]);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
-  return <C.Provider value={{ repo: r, photos: p, reload, demo, error, ...data }}>{children}</C.Provider>;
+  return <Ctx.Provider value={{ ...snap, repo, photos, loading, error, reload }}>{children}</Ctx.Provider>;
+}
+
+export function useData(): DataValue {
+  const v = useContext(Ctx);
+  if (!v) throw new Error('useData must be used inside DataProvider');
+  return v;
 }

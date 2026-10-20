@@ -7,15 +7,15 @@ import type { Artist } from '../domain/types';
 
 export interface DraftLine {
   key: string;
-  photo: Blob | null;
-  thumb: Blob | null;
+  photo: Blob | null; // cropped full photo
+  thumb: Blob | null; // cropped thumbnail
   title: string;
   artistName: string;
-  tags: string;
+  tags: string; // comma-separated
   quantity: string;
-  price: string;
+  price: string; // listed price each, order currency
   estimated: boolean;
-  existingSheetId: string | null;
+  existingSheetId: string | null; // set when the user chose "add copies to existing"
 }
 
 export type SaveResult = { ok: true } | { ok: false; error: string };
@@ -76,7 +76,7 @@ export async function saveOrder(args: {
       });
       sheetId = sheet.id;
     }
-    await repo.addLine({ orderId: order.id, sheetId: sheetId!, quantity: qty, priceMinor, estimated: d.estimated });
+    await repo.addLine({ orderId: order.id, sheetId, quantity: qty, priceMinor, estimated: d.estimated });
   }
   return { ok: true };
 }

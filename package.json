@@ -1,5 +1,5 @@
 {
-  "name": "sticker-vault",
+  "name": "sticker-shelf",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -11,6 +11,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-sans-kr": "5.3.0",
     "@supabase/supabase-js": "2.118.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
@@ -23,7 +24,8 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
-    "jsdom": "30.1.3",
+    "jsdom": "29.1.1",
+    "playwright": "1.64.1",
     "typescript": "7.0.2",
     "vite": "8.3.4",
     "vite-plugin-pwa": "2.0.0",

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
+import { artistColor } from '../../domain/artistColor';
 import { useNavigate, useParams } from 'react-router-dom';
 import { copiesOwned } from '../../domain/holdings';
 import { formatMoney } from '../../domain/currency';
@@ -45,7 +46,7 @@ export function SheetDetail() {
       const o = d.orders.find((x) => x.id === l.orderId);
       if (o) sgd += lineSgdMinor(l, o, linesOf(o, d.lines)) ?? 0;
     }
-    const text = `Delete "${sheet.title}"?\n\nThis removes: the sheet, its photo, ${myLines.length} order line(s) (${formatMoney(sgd, 'SGD')}), ${myUsages.length} used-up record(s). Orders left with no sheets are removed too.\n\nTo record that you used a sheet, use "Mark used up" instead.`;
+    const text = `Delete "${sheet.title}"?\n\nThis removes: the sheet, its photo, ${myLines.length} order line${myLines.length === 1 ? '' : 's'} (${formatMoney(sgd, 'SGD')}), ${myUsages.length} used-up record${myUsages.length === 1 ? '' : 's'}. Orders left with no sheets are removed too.\n\nTo record that you used a sheet, use "Mark used up" instead.`;
     if (!window.confirm(text)) return;
     if (sheet.photoPath) await d.photos.remove('photos', [sheet.photoPath]);
     if (sheet.thumbPath) await d.photos.remove('thumbs', [sheet.thumbPath]);
@@ -56,10 +57,7 @@ export function SheetDetail() {
 
   const saveEdit = async () => {
     let artistId: string | null = null;
-    if (artist.trim()) {
-      const found = findArtistByName(artist, d.artists);
-      artistId = found ? found.id : (await d.repo.createArtist(artist)).id;
-    }
+    if (artist.trim()) artistId = (findArtistByName(artist, d.artists) ?? (await d.repo.createArtist(artist))).id;
     await d.repo.updateSheet(sheet.id, {
       title: title.trim() || sheet.title, artistId, tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
     });
@@ -79,15 +77,23 @@ export function SheetDetail() {
           <button onClick={() => setEditing(false)}>Cancel</button>
         </div>
       ) : (
-        <>
-          <h1>{sheet.title}</h1>
-          <p>{artistName}{sheet.tags.length ? ` # ${sheet.tags.join(' #')}` : ''}</p>
-          <button onClick={() => { setTitle(sheet.title); setArtist(artistName); setTags(sheet.tags.join(', ')); setEditing(true); }}>Edit</button>
-        </>
+        <div className="detail-head" style={{ '--tab': artistColor(sheet.artistId).tab } as CSSProperties}>
+          <div className="who">
+            <h1>{sheet.title}</h1>
+            <div className="hint">{artistName || 'Unknown artist'}</div>
+            {sheet.tags.map((t) => <span key={t} className="chip">{t}</span>)}
+          </div>
+          <div className="count" aria-label={owned > 0 ? `Own: ${owned} ${owned === 1 ? 'copy' : 'copies'}` : 'Used up'}>
+            {owned > 0 ? owned : 0}<small>{owned === 1 ? 'copy' : 'copies'}</small>
+          </div>
+        </div>
+      )}
+      {!editing && (
+        <button onClick={() => { setTitle(sheet.title); setArtist(artistName); setTags(sheet.tags.join(', ')); setEditing(true); }}>Edit details</button>
       )}
 
       <div className="card">
-        <p><b>{owned > 0 ? `Own: ${owned} ${owned === 1 ? 'copy' : 'copies'}` : 'Used up'}</b></p>
+        <p style={{ margin: '0 0 4px' }}><b>{owned > 0 ? 'Used some?' : 'All copies used up'}</b></p>
         {owned > 0 && (
           <div className="row">
             <label>Copies used<input inputMode="numeric" value={useQty} onChange={(e) => setUseQty(e.target.value)} /></label>
@@ -106,7 +112,7 @@ export function SheetDetail() {
             if (!o) return null;
             return (
               <tr key={l.id}>
-                <td>{o.isUnknown ? 'Unknown' : o.orderDate ?? '-'}{o.estimated || l.estimated ? ' (est.)' : ''}</td>
+                <td>{o.isUnknown ? 'Unknown' : o.orderDate ?? '—'}{o.estimated || l.estimated ? ' (est.)' : ''}</td>
                 <td>{o.shop ?? ''}</td>
                 <td>{l.quantity}</td>
                 <td>{formatMoney(l.priceMinor, o.currency)}</td>

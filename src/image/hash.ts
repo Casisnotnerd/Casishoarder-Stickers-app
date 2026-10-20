@@ -7,12 +7,10 @@ export async function computeImageHash(blob: Blob): Promise<string> {
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(bmp, 0, 0, size, 8);
   const data = ctx.getImageData(0, 0, size, 8).data;
-  // grayscale
   const gray: number[] = [];
   for (let i = 0; i < data.length; i += 4) {
     gray.push(Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]));
   }
-  // dHash: compare adjacent pixels horizontally
   let bits = '';
   for (let y = 0; y < 8; y++) {
     for (let x = 0; x < 8; x++) {
@@ -21,7 +19,6 @@ export async function computeImageHash(blob: Blob): Promise<string> {
       bits += left > right ? '1' : '0';
     }
   }
-  // convert 64-bit binary to hex
   let hex = '';
   for (let i = 0; i < 64; i += 4) {
     hex += parseInt(bits.slice(i, i + 4), 2).toString(16);

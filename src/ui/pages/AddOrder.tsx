@@ -20,6 +20,7 @@ export function AddOrder() {
   const [saving, setSaving] = useState(false);
   const currency = unknownOrder ? 'SGD' : form.currency;
 
+  // Live preview of the derived rate and mismatch warning.
   const parsed = parseOrderForm(form);
   const preview = parsed.ok && !unknownOrder ? (() => {
     const o: Order = { ...parsed.value, id: 'draft', isUnknown: false, createdAt: '' };
@@ -56,8 +57,8 @@ export function AddOrder() {
       {preview?.rate != null && preview.currency !== 'SGD' && (
         <p className="hint">Rate from your payment: 1 {preview.currency} = S${preview.rate.toPrecision(3)}</p>
       )}
-      {preview?.mismatch && (
-        <p className="warn">Order total {formatMoney(preview.mismatch.totalMinor, preview.currency)} vs sheets + shipping
+      {preview?.mismatch && drafts.length > 0 && !editing && (
+        <p className="warn">Order total {formatMoney(preview.mismatch.totalMinor, preview.currency)} ≠ sheets + shipping
           {' '}{formatMoney(preview.mismatch.expectedMinor, preview.currency)} (difference {formatMoney(preview.mismatch.diffMinor, preview.currency)}).
           Both will be saved.</p>
       )}
@@ -65,7 +66,7 @@ export function AddOrder() {
       <h2>Sheets in this {unknownOrder ? 'batch' : 'order'} ({drafts.length})</h2>
       {drafts.map((d) => (
         <div key={d.key} className="card row">
-          <span>{d.title || '(existing sheet)'} x{d.quantity}{d.price ? ` @ ${d.price} ${currency}` : ''}</span>
+          <span>{d.title || '(existing sheet)'} ×{d.quantity}{d.price ? ` · ${d.price} ${currency}` : ''}</span>
           <button onClick={() => setDrafts(drafts.filter((x) => x.key !== d.key))}>Remove</button>
         </div>
       ))}
@@ -73,13 +74,13 @@ export function AddOrder() {
         <SheetDraftEditor currency={currency} onCancel={() => setEditing(false)}
           onDone={(d) => { setDrafts([...drafts, d]); setEditing(false); }} />
       ) : (
-        <button onClick={() => setEditing(true)}>Add a sheet</button>
+        <button onClick={() => setEditing(true)}>📷 Add a sheet</button>
       )}
 
       {error && <p className="error">{error}</p>}
       <div>
         <button className="primary" disabled={saving || drafts.length === 0 || editing} onClick={() => void save()}>
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
     </main>

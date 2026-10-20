@@ -48,8 +48,8 @@ export function Orders() {
               </>
             ) : (
               <div className="row">
-                <span>{o.orderDate ?? 'No date'}{o.estimated ? ' (est.)' : ''} / {o.shop ?? 'No shop'} / {sheets} sheet{sheets === 1 ? '' : 's'}</span>
-                <span>{formatMoney(o.totalMinor, o.currency)} / {formatMoney(effectiveSgdPaidMinor(o, ol), 'SGD')}</span>
+                <span>{o.orderDate ?? 'No date'}{o.estimated ? ' (est.)' : ''} · {o.shop ?? 'No shop'} · {sheets} sheet{sheets === 1 ? '' : 's'}</span>
+                <span>{formatMoney(o.totalMinor, o.currency)} → {formatMoney(effectiveSgdPaidMinor(o, ol), 'SGD')}</span>
                 <button onClick={() => startEdit(o)}>Edit</button>
               </div>
             )}

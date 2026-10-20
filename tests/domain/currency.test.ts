@@ -31,7 +31,9 @@ test('minorToInput formats for editing', () => {
 test('formatMoney shows a dash for unknown SGD', () => {
   expect(formatMoney(null, 'SGD')).toBe('S$ —');
   expect(formatMoney(null, 'KRW')).toBe('KRW —');
-  expect(formatMoney(312, 'SGD')).toMatch(/3\.12/);
+  expect(formatMoney(312, 'SGD')).toBe('S$3.12');
+  expect(formatMoney(123456, 'SGD')).toBe('S$1,234.56');
+  expect(formatMoney(-111, 'SGD')).toBe('-S$1.11');
   expect(formatMoney(3000, 'KRW')).toMatch(/3,000/);
 });
 

@@ -26,6 +26,7 @@ export interface Repo {
   mergeArtists(keepId: string, mergeId: string): Promise<void>;
   createSheet(input: NewSheet): Promise<Sheet>;
   updateSheet(id: string, patch: SheetPatch): Promise<void>;
+  /** Deletes the sheet, its order lines and usages, and any order left with no lines. */
   deleteSheet(id: string): Promise<void>;
   createOrder(input: NewOrder): Promise<Order>;
   updateOrder(id: string, patch: Partial<NewOrder>): Promise<void>;

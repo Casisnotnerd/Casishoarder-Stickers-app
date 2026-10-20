@@ -1,7 +1,10 @@
+# Supabase pauses free projects after 1 week of inactivity. This pings it twice a week.
+# GitHub disables scheduled workflows in public repos after 60 days without repo activity;
+# if that happens, open Actions → "Keep Supabase awake" → "Enable workflow".
 name: Keep Supabase awake
 on:
   schedule:
-    - cron: '17 3 * * 1,4'
+    - cron: '17 3 * * 1,4' # Mon and Thu 03:17 UTC
   workflow_dispatch:
 jobs:
   ping:

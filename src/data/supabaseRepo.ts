@@ -1,228 +1,190 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Artist, Order, OrderLine, Sheet, ShareLink, Usage } from '../domain/types';
+import { usageError } from '../domain/holdings';
 import type { NewLine, NewOrder, NewSheet, PhotoKind, PhotoStore, Repo, SharedSheet, SheetPatch, Snapshot } from './repo';
-import { supabase } from './supabaseClient';
+import { randomToken } from './token';
 
-function client() {
-  if (!supabase) throw new Error('Supabase not configured');
-  return supabase;
+type Row = Record<string, unknown>;
+interface Res<T> { data: T | null; error: { message: string } | null }
+
+function ok<T>(r: Res<T>): T {
+  if (r.error) throw new Error(r.error.message);
+  return r.data as T;
 }
 
-function rowToArtist(r: any): Artist {
-  return { id: r.id, name: r.name, aliases: r.aliases ?? [] };
-}
-function rowToSheet(r: any): Sheet {
-  return {
-    id: r.id, artistId: r.artist_id, title: r.title, tags: r.tags ?? [],
-    photoPath: r.photo_path, thumbPath: r.thumb_path, photoBytes: r.photo_bytes ?? 0, imageHash: r.image_hash ?? null, createdAt: r.created_at,
-  };
-}
-function rowToOrder(r: any): Order {
-  return {
-    id: r.id, orderDate: r.order_date, shop: r.shop, currency: r.currency,
-    shippingMinor: Number(r.shipping_minor), totalMinor: r.total_minor === null ? null : Number(r.total_minor),
-    sgdPaidMinor: r.sgd_paid_minor === null ? null : Number(r.sgd_paid_minor),
-    estimated: r.estimated, isUnknown: r.is_unknown, createdAt: r.created_at,
-  };
-}
-function rowToLine(r: any): OrderLine {
-  return {
-    id: r.id, orderId: r.order_id, sheetId: r.sheet_id, quantity: r.quantity,
-    priceMinor: r.price_minor === null ? null : Number(r.price_minor), estimated: r.estimated,
-  };
-}
-function rowToUsage(r: any): Usage {
-  return { id: r.id, sheetId: r.sheet_id, quantity: r.quantity, usedOn: r.used_on };
-}
+const artistFrom = (r: Row): Artist => ({ id: r.id as string, name: r.name as string, aliases: (r.aliases as string[]) ?? [] });
+const sheetFrom = (r: Row): Sheet => ({
+  id: r.id as string, artistId: (r.artist_id as string | null) ?? null, title: r.title as string,
+  tags: (r.tags as string[]) ?? [], photoPath: (r.photo_path as string | null) ?? null,
+  thumbPath: (r.thumb_path as string | null) ?? null, photoBytes: Number(r.photo_bytes ?? 0),
+  imageHash: (r.image_hash as string | null) ?? null, createdAt: r.created_at as string,
+});
+const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+const orderFrom = (r: Row): Order => ({
+  id: r.id as string, orderDate: (r.order_date as string | null) ?? null, shop: (r.shop as string | null) ?? null,
+  currency: r.currency as string, shippingMinor: Number(r.shipping_minor ?? 0), totalMinor: num(r.total_minor),
+  sgdPaidMinor: num(r.sgd_paid_minor), estimated: Boolean(r.estimated), isUnknown: Boolean(r.is_unknown),
+  createdAt: r.created_at as string,
+});
+const lineFrom = (r: Row): OrderLine => ({
+  id: r.id as string, orderId: r.order_id as string, sheetId: r.sheet_id as string,
+  quantity: Number(r.quantity), priceMinor: num(r.price_minor), estimated: Boolean(r.estimated),
+});
+const usageFrom = (r: Row): Usage => ({
+  id: r.id as string, sheetId: r.sheet_id as string, quantity: Number(r.quantity), usedOn: r.used_on as string,
+});
+
+const orderTo = (o: Partial<NewOrder>): Row => {
+  const m: Row = {};
+  if (o.orderDate !== undefined) m.order_date = o.orderDate;
+  if (o.shop !== undefined) m.shop = o.shop;
+  if (o.currency !== undefined) m.currency = o.currency;
+  if (o.shippingMinor !== undefined) m.shipping_minor = o.shippingMinor;
+  if (o.totalMinor !== undefined) m.total_minor = o.totalMinor;
+  if (o.sgdPaidMinor !== undefined) m.sgd_paid_minor = o.sgdPaidMinor;
+  if (o.estimated !== undefined) m.estimated = o.estimated;
+  return m;
+};
+
+const PAGE = 1000; // PostgREST returns at most 1000 rows per request by default
 
 export class SupabaseRepo implements Repo {
+  constructor(private db: SupabaseClient) {}
+
+  private async selectAll(table: string): Promise<Row[]> {
+    const out: Row[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const rows = ok(await this.db.from(table).select('*').range(from, from + PAGE - 1)) as Row[];
+      out.push(...rows);
+      if (rows.length < PAGE) return out;
+    }
+  }
+
   async loadAll(): Promise<Snapshot> {
-    const c = client();
-    const [a, s, o, l, u] = await Promise.all([
-      c.from('artists').select('*'),
-      c.from('sheets').select('*'),
-      c.from('orders').select('*'),
-      c.from('order_lines').select('*'),
-      c.from('usages').select('*'),
-    ]);
-    const err = a.error || s.error || o.error || l.error || u.error;
-    if (err) throw new Error('load failed: ' + (err.message ?? JSON.stringify(err)));
+    const [a, s, o, l, u] = await Promise.all(
+      ['artists', 'sheets', 'orders', 'order_lines', 'usages'].map((t) => this.selectAll(t)),
+    );
     return {
-      artists: (a.data ?? []).map(rowToArtist),
-      sheets: (s.data ?? []).map(rowToSheet),
-      orders: (o.data ?? []).map(rowToOrder),
-      lines: (l.data ?? []).map(rowToLine),
-      usages: (u.data ?? []).map(rowToUsage),
+      artists: a.map(artistFrom), sheets: s.map(sheetFrom), orders: o.map(orderFrom),
+      lines: l.map(lineFrom), usages: u.map(usageFrom),
     };
   }
 
   async createArtist(name: string): Promise<Artist> {
-    const c = client();
-    const { data, error } = await c.from('artists').insert({ name: name.trim() }).select().single();
-    if (error || !data) throw new Error(error?.message ?? 'create artist failed');
-    return rowToArtist(data);
+    return artistFrom(ok(await this.db.from('artists').insert({ name: name.trim() }).select().single()) as Row);
   }
 
   async mergeArtists(keepId: string, mergeId: string): Promise<void> {
     if (keepId === mergeId) throw new Error('Pick two different artists.');
-    const c = client();
-    const { data: keep } = await c.from('artists').select('*').eq('id', keepId).single();
-    const { data: merge } = await c.from('artists').select('*').eq('id', mergeId).single();
+    const rows = ok(await this.db.from('artists').select('*').in('id', [keepId, mergeId])) as Row[];
+    const keep = rows.map(artistFrom).find((a) => a.id === keepId);
+    const merge = rows.map(artistFrom).find((a) => a.id === mergeId);
     if (!keep || !merge) throw new Error('Artist not found.');
-    await c.from('sheets').update({ artist_id: keepId }).eq('artist_id', mergeId);
-    const aliases = [...new Set([...(keep.aliases ?? []), merge.name, ...(merge.aliases ?? [])])];
-    await c.from('artists').update({ aliases }).eq('id', keepId);
-    await c.from('artists').delete().eq('id', mergeId);
+    ok(await this.db.from('sheets').update({ artist_id: keepId }).eq('artist_id', mergeId));
+    const aliases = [...new Set([...keep.aliases, merge.name, ...merge.aliases])];
+    ok(await this.db.from('artists').update({ aliases }).eq('id', keepId));
+    ok(await this.db.from('artists').delete().eq('id', mergeId));
   }
 
   async createSheet(input: NewSheet): Promise<Sheet> {
-    const c = client();
-    const { data, error } = await c.from('sheets').insert({
-      artist_id: input.artistId, title: input.title, tags: input.tags,
-      photo_path: input.photoPath, thumb_path: input.thumbPath, photo_bytes: input.photoBytes,
-      image_hash: input.imageHash,
-    }).select().single();
-    if (error || !data) throw new Error(error?.message ?? 'create sheet failed');
-    return rowToSheet(data);
+    const row = {
+      artist_id: input.artistId, title: input.title, tags: input.tags, photo_path: input.photoPath,
+      thumb_path: input.thumbPath, photo_bytes: input.photoBytes, image_hash: input.imageHash,
+    };
+    return sheetFrom(ok(await this.db.from('sheets').insert(row).select().single()) as Row);
   }
 
   async updateSheet(id: string, patch: SheetPatch): Promise<void> {
-    const c = client();
-    const row: any = {};
-    if (patch.artistId !== undefined) row.artist_id = patch.artistId;
-    if (patch.title !== undefined) row.title = patch.title;
-    if (patch.tags !== undefined) row.tags = patch.tags;
-    const { error } = await c.from('sheets').update(row).eq('id', id);
-    if (error) throw new Error(error.message);
+    const m: Row = {};
+    if (patch.artistId !== undefined) m.artist_id = patch.artistId;
+    if (patch.title !== undefined) m.title = patch.title;
+    if (patch.tags !== undefined) m.tags = patch.tags;
+    ok(await this.db.from('sheets').update(m).eq('id', id));
   }
 
   async deleteSheet(id: string): Promise<void> {
-    const c = client();
-    // delete lines/usages handled by cascade; but orders left empty need removal
-    const { data: affected } = await c.from('order_lines').select('order_id').eq('sheet_id', id);
-    const orderIds = [...new Set((affected ?? []).map((r: any) => r.order_id))];
-    await c.from('sheets').delete().eq('id', id);
-    for (const oid of orderIds) {
-      const { data: remaining } = await c.from('order_lines').select('id').eq('order_id', oid);
-      if (!remaining || remaining.length === 0) {
-        await c.from('orders').delete().eq('id', oid);
-      }
+    const affected = (ok(await this.db.from('order_lines').select('order_id').eq('sheet_id', id)) as Row[])
+      .map((r) => r.order_id as string);
+    ok(await this.db.from('sheets').delete().eq('id', id)); // cascades to lines and usages
+    for (const orderId of new Set(affected)) {
+      const left = ok(await this.db.from('order_lines').select('id').eq('order_id', orderId).limit(1)) as Row[];
+      if (left.length === 0) ok(await this.db.from('orders').delete().eq('id', orderId));
     }
   }
 
   async createOrder(input: NewOrder): Promise<Order> {
-    const c = client();
-    const { data, error } = await c.from('orders').insert({
-      order_date: input.orderDate, shop: input.shop, currency: input.currency,
-      shipping_minor: input.shippingMinor, total_minor: input.totalMinor,
-      sgd_paid_minor: input.sgdPaidMinor, estimated: input.estimated,
-    }).select().single();
-    if (error || !data) throw new Error(error?.message ?? 'create order failed');
-    return rowToOrder(data);
+    return orderFrom(ok(await this.db.from('orders').insert(orderTo(input)).select().single()) as Row);
   }
 
   async updateOrder(id: string, patch: Partial<NewOrder>): Promise<void> {
-    const c = client();
-    const row: any = {};
-    if (patch.orderDate !== undefined) row.order_date = patch.orderDate;
-    if (patch.shop !== undefined) row.shop = patch.shop;
-    if (patch.currency !== undefined) row.currency = patch.currency;
-    if (patch.shippingMinor !== undefined) row.shipping_minor = patch.shippingMinor;
-    if (patch.totalMinor !== undefined) row.total_minor = patch.totalMinor;
-    if (patch.sgdPaidMinor !== undefined) row.sgd_paid_minor = patch.sgdPaidMinor;
-    if (patch.estimated !== undefined) row.estimated = patch.estimated;
-    const { error } = await c.from('orders').update(row).eq('id', id);
-    if (error) throw new Error(error.message);
+    ok(await this.db.from('orders').update(orderTo(patch)).eq('id', id));
   }
 
   async getOrCreateUnknownOrder(): Promise<Order> {
-    const c = client();
-    const { data: existing } = await c.from('orders').select('*').eq('is_unknown', true).maybeSingle();
-    if (existing) return rowToOrder(existing);
-    const { data, error } = await c.from('orders').insert({
-      currency: 'SGD', is_unknown: true,
-    }).select().single();
-    if (error || !data) throw new Error(error?.message ?? 'create unknown order failed');
-    return rowToOrder(data);
+    const found = ok(await this.db.from('orders').select('*').eq('is_unknown', true).limit(1)) as Row[];
+    if (found.length) return orderFrom(found[0]);
+    return orderFrom(ok(await this.db.from('orders').insert({ is_unknown: true, currency: 'SGD' }).select().single()) as Row);
   }
 
   async addLine(input: NewLine): Promise<OrderLine> {
-    if (!Number.isInteger(input.quantity) || input.quantity < 1) throw new Error('Quantity must be 1 or more.');
-    const c = client();
-    const { data, error } = await c.from('order_lines').insert({
+    const row = {
       order_id: input.orderId, sheet_id: input.sheetId, quantity: input.quantity,
       price_minor: input.priceMinor, estimated: input.estimated,
-    }).select().single();
-    if (error || !data) throw new Error(error?.message ?? 'add line failed');
-    return rowToLine(data);
+    };
+    return lineFrom(ok(await this.db.from('order_lines').insert(row).select().single()) as Row);
   }
 
   async addUsage(sheetId: string, quantity: number, usedOn: string): Promise<Usage> {
-    const c = client();
-    // validation done client-side via holdings; trust here
-    const { data, error } = await c.from('usages').insert({
-      sheet_id: sheetId, quantity, used_on: usedOn,
-    }).select().single();
-    if (error || !data) throw new Error(error?.message ?? 'add usage failed');
-    return rowToUsage(data);
+    const lines = (ok(await this.db.from('order_lines').select('*').eq('sheet_id', sheetId)) as Row[]).map(lineFrom);
+    const usages = (ok(await this.db.from('usages').select('*').eq('sheet_id', sheetId)) as Row[]).map(usageFrom);
+    const err = usageError(sheetId, quantity, lines, usages);
+    if (err) throw new Error(err);
+    return usageFrom(ok(await this.db.from('usages').insert({ sheet_id: sheetId, quantity, used_on: usedOn }).select().single()) as Row);
   }
 
   async getShareLink(): Promise<ShareLink | null> {
-    const c = client();
-    const { data } = await c.from('share_links').select('*').maybeSingle();
-    if (!data) return null;
-    return { token: data.token, enabled: data.enabled };
+    const rows = ok(await this.db.from('share_links').select('*').limit(1)) as Row[];
+    return rows.length ? { token: rows[0].token as string, enabled: Boolean(rows[0].enabled) } : null;
   }
 
   async setShareLinkEnabled(enabled: boolean): Promise<ShareLink> {
-    const c = client();
-    const existing = await this.getShareLink();
-    if (existing) {
-      const { data, error } = await c.from('share_links').update({ enabled }).eq('token', existing.token).select().single();
-      if (error || !data) throw new Error(error?.message ?? 'update share failed');
-      return { token: data.token, enabled: data.enabled };
+    const current = await this.getShareLink();
+    if (current) {
+      ok(await this.db.from('share_links').update({ enabled }).eq('token', current.token));
+      return { ...current, enabled };
     }
-    const token = (await import('./token')).randomToken();
-    const { data, error } = await c.from('share_links').insert({ token, enabled }).select().single();
-    if (error || !data) throw new Error(error?.message ?? 'create share failed');
-    return { token: data.token, enabled: data.enabled };
+    const token = randomToken();
+    ok(await this.db.from('share_links').insert({ token, enabled }));
+    return { token, enabled };
   }
 
   async sharedCollection(token: string): Promise<SharedSheet[]> {
-    const c = client();
-    const { data, error } = await c.rpc('shared_collection', { p_token: token });
-    if (error) throw new Error(error.message);
-    return (data ?? []).map((r: any) => ({
-      sheetId: r.sheet_id, title: r.title, artist: r.artist, thumbPath: r.thumb_path,
+    const rows = ok(await this.db.rpc('shared_collection', { p_token: token })) as Row[];
+    return rows.map((r) => ({
+      sheetId: r.sheet_id as string, title: r.title as string,
+      artist: (r.artist as string | null) ?? null, thumbPath: (r.thumb_path as string | null) ?? null,
     }));
   }
 }
 
 export class SupabasePhotoStore implements PhotoStore {
-  private c: any;
-  constructor(c?: any) { this.c = c ?? null; }
-  private sb() { return this.c ?? client(); }
+  /** userId may be '' for read-only use (shared view). */
+  constructor(private db: SupabaseClient, private userId: string) {}
+
   async upload(kind: PhotoKind, blob: Blob): Promise<{ path: string; bytes: number }> {
-    const c = this.sb();
-    const { data: { user } } = await c.auth.getUser();
-    const uid = user?.id ?? 'anon';
-    const path = `${uid}/${crypto.randomUUID()}.jpg`;
-    const bucket = kind;
-    const { error } = await c.storage.from(bucket).upload(path, blob, { contentType: 'image/jpeg' });
-    if (error) throw new Error(error.message);
+    if (!this.userId) throw new Error('Not signed in.');
+    const path = `${this.userId}/${crypto.randomUUID()}.jpg`;
+    ok(await this.db.storage.from(kind).upload(path, blob, { contentType: 'image/jpeg', upsert: false }));
     return { path, bytes: blob.size };
   }
+
   async url(kind: PhotoKind, path: string): Promise<string> {
-    const c = this.sb();
-    if (kind === 'thumbs') {
-      const { data } = c.storage.from(kind).getPublicUrl(path);
-      return data.publicUrl;
-    }
-    const { data, error } = await c.storage.from(kind).createSignedUrl(path, 3600);
-    if (error) throw new Error(error.message);
-    return data.signedUrl;
+    if (kind === 'thumbs') return this.db.storage.from('thumbs').getPublicUrl(path).data.publicUrl;
+    const r = ok(await this.db.storage.from('photos').createSignedUrl(path, 3600)) as { signedUrl: string };
+    return r.signedUrl;
   }
+
   async remove(kind: PhotoKind, paths: string[]): Promise<void> {
-    const c = this.sb();
-    if (paths.length) await c.storage.from(kind).remove(paths);
+    if (paths.length) ok(await this.db.storage.from(kind).remove(paths));
   }
 }

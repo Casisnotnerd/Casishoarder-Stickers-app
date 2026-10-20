@@ -8,7 +8,7 @@ const lines: OrderLine[] = [
 ];
 const usages: Usage[] = [{ id: 'u1', sheetId: 'winter', quantity: 1, usedOn: '2026-10-19' }];
 
-test('copies owned = bought - used', () => {
+test('copies owned = bought − used', () => {
   expect(copiesBought('winter', lines)).toBe(3);
   expect(copiesUsed('winter', usages)).toBe(1);
   expect(copiesOwned('winter', lines, usages)).toBe(2);

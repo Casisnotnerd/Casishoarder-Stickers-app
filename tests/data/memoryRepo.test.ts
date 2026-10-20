@@ -53,7 +53,7 @@ test('addUsage rejects using more copies than owned', async () => {
   const a = await r.createSheet(sheetInput('A'));
   const o = await r.getOrCreateUnknownOrder();
   await r.addLine({ orderId: o.id, sheetId: a.id, quantity: 1, priceMinor: null, estimated: false });
-  await expect(r.addUsage(a.id, 2, '2026-10-20')).rejects.toThrow();
+  await expect(r.addUsage(a.id, 2, '2026-10-20')).rejects.toThrow('You only have 1 copy.');
 });
 
 test('sharedCollection: only when enabled, hides used-up, no price fields', async () => {

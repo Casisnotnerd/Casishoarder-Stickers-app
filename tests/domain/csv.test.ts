@@ -10,7 +10,7 @@ test('csvEscape quotes commas, quotes and newlines', () => {
 });
 
 test('toCsv starts with a UTF-8 BOM so Excel shows Korean', () => {
-  expect(toCsv([['계란이 좋아']])).toBe('\uFEFF계란이 좋아\r\n');
+  expect(toCsv([['계란이 좋아']])).toBe('﻿계란이 좋아\r\n');
 });
 
 test('collectionCsv: one row per order line, SGD per sheet', () => {
@@ -25,7 +25,7 @@ test('collectionCsv: one row per order line, SGD per sheet', () => {
   }];
   const lines: OrderLine[] = [{ id: 'l', orderId: 'o', sheetId: 'egg', quantity: 4, priceMinor: 3000, estimated: false }];
   const usages: Usage[] = [{ id: 'u', sheetId: 'egg', quantity: 1, usedOn: '2026-10-20' }];
-  const rows = collectionCsv({ artists, sheets, orders, lines, usages }).replace('\uFEFF', '').trim().split('\r\n');
+  const rows = collectionCsv({ artists, sheets, orders, lines, usages }).replace('﻿', '').trim().split('\r\n');
   expect(rows[0]).toBe('Title,Artist,Tags,Copies owned,Order date,Shop,Currency,Quantity,Price each,Price each (SGD),Estimated');
   expect(rows[1]).toBe('No order yet,,,0,,,,,,,');
   expect(rows[2]).toBe('계란이 좋아,JUIMJUIM,food; korean,3,2026-10-19,"Shop, Seoul",KRW,4,3000,3.12,no');

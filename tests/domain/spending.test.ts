@@ -45,9 +45,10 @@ test('summarizeSpending totals, buckets and missing SGD', () => {
   expect(s.missingSgdOrderIds).toEqual(['krwMissing']);
 });
 
-test('discount shows up as negative other', () => {
+test('discount shows up as negative "other"', () => {
   const discounted = orders.map((o) => (o.id === 'krw' ? { ...o, totalMinor: 14000 } : o));
   const s = summarizeSpending({ artists, sheets, orders: discounted, lines });
+  // base 14000: egg 3×3000→1003, dumpling →334, shipping →334; parts 1671; paid 1560; other −111
   expect(s.otherMinor).toBe(-111);
   expect(s.totalMinor).toBe(2460);
 });
