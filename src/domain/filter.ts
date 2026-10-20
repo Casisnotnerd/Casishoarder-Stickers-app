@@ -28,7 +28,7 @@ export interface FilterData {
 }
 
 export function allTags(sheets: Sheet[]): string[] {
-  return [...new Set(sheets.flatMap((s) => s.tags))].sort((a, b) => a.localeCompare(b));
+  return [...new Set(sheets.flatMap((s) => s.tags.map((t) => t.trim().toLowerCase())))].sort((a, b) => a.localeCompare(b));
 }
 
 export function filterSheets(f: SheetFilter, d: FilterData): Sheet[] {
@@ -41,7 +41,7 @@ export function filterSheets(f: SheetFilter, d: FilterData): Sheet[] {
     .filter((s) => {
       if (!f.showUsedUp && copiesOwned(s.id, d.lines, d.usages) <= 0) return false;
       if (f.artistId && s.artistId !== f.artistId) return false;
-      if (f.tag && !s.tags.includes(f.tag)) return false;
+      if (f.tag && !s.tags.some((t) => t.toLowerCase() === f.tag!.toLowerCase())) return false;
       if (q) {
         const a = s.artistId ? artistById.get(s.artistId) : undefined;
         const hay = [s.title, a?.name ?? '', ...(a?.aliases ?? []), ...s.tags].map(normalizeText);

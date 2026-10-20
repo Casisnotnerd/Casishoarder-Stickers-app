@@ -68,7 +68,7 @@ export async function saveOrder(args: {
       const sheet = await repo.createSheet({
         artistId,
         title: d.title.trim(),
-        tags: d.tags.split(',').map((t) => t.trim()).filter(Boolean),
+        tags: [...new Set(d.tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean))],
         photoPath: photo?.path ?? null,
         thumbPath: thumb?.path ?? null,
         photoBytes: (photo?.bytes ?? 0) + (thumb?.bytes ?? 0),

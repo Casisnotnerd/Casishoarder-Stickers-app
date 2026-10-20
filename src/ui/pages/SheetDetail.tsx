@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { artistColor } from '../../domain/artistColor';
 import { useNavigate, useParams } from 'react-router-dom';
-import { copiesOwned } from '../../domain/holdings';
+import { copiesOwned, copiesBought } from '../../domain/holdings';
 import { formatMoney } from '../../domain/currency';
 import { findArtistByName } from '../../domain/duplicates';
 import { linesOf, lineSgdMinor, unitSgdMinor } from '../../domain/money';
@@ -21,6 +21,7 @@ export function SheetDetail() {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [tags, setTags] = useState('');
+  const [copies, setCopies] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
 
   if (!sheet) return <main className="page"><p>Sheet not found.</p></main>;
@@ -48,19 +49,35 @@ export function SheetDetail() {
     }
     const text = `Delete "${sheet.title}"?\n\nThis removes: the sheet, its photo, ${myLines.length} order line${myLines.length === 1 ? '' : 's'} (${formatMoney(sgd, 'SGD')}), ${myUsages.length} used-up record${myUsages.length === 1 ? '' : 's'}. Orders left with no sheets are removed too.\n\nTo record that you used a sheet, use "Mark used up" instead.`;
     if (!window.confirm(text)) return;
-    if (sheet.photoPath) await d.photos.remove('photos', [sheet.photoPath]);
-    if (sheet.thumbPath) await d.photos.remove('thumbs', [sheet.thumbPath]);
-    await d.repo.deleteSheet(sheet.id);
-    await d.reload();
-    nav('/');
+    try {
+      if (sheet.photoPath) await d.photos.remove('photos', [sheet.photoPath]).catch(() => {});
+      if (sheet.thumbPath) await d.photos.remove('thumbs', [sheet.thumbPath]).catch(() => {});
+      await d.repo.deleteSheet(sheet.id);
+      await d.reload();
+      nav('/');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+    }
   };
 
   const saveEdit = async () => {
     let artistId: string | null = null;
     if (artist.trim()) artistId = (findArtistByName(artist, d.artists) ?? (await d.repo.createArtist(artist))).id;
+    const normTags = tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+    const uniqueTags = [...new Set(normTags)];
     await d.repo.updateSheet(sheet.id, {
-      title: title.trim() || sheet.title, artistId, tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      title: title.trim() || sheet.title, artistId, tags: uniqueTags,
     });
+    const newCopies = Number(copies);
+    if (Number.isInteger(newCopies) && newCopies >= 1) {
+      if (myLines.length > 0) {
+        const first = myLines[0];
+        if (first.quantity !== newCopies) await d.repo.updateLine(first.id, { quantity: newCopies });
+      } else {
+        const o = await d.repo.getOrCreateUnknownOrder();
+        await d.repo.addLine({ orderId: o.id, sheetId: sheet.id, quantity: newCopies, priceMinor: null, estimated: false });
+      }
+    }
     await d.reload();
     setEditing(false);
   };
@@ -73,6 +90,7 @@ export function SheetDetail() {
           <label>Title<input value={title} onChange={(e) => setTitle(e.target.value)} /></label>
           <label>Artist<input value={artist} onChange={(e) => setArtist(e.target.value)} /></label>
           <label>Tags<input value={tags} onChange={(e) => setTags(e.target.value)} /></label>
+          <label>Copies bought<input inputMode="numeric" value={copies} onChange={(e) => setCopies(e.target.value)} /></label>
           <button className="primary" onClick={() => void saveEdit()}>Save</button>
           <button onClick={() => setEditing(false)}>Cancel</button>
         </div>
@@ -89,7 +107,7 @@ export function SheetDetail() {
         </div>
       )}
       {!editing && (
-        <button onClick={() => { setTitle(sheet.title); setArtist(artistName); setTags(sheet.tags.join(', ')); setEditing(true); }}>Edit details</button>
+        <button onClick={() => { setTitle(sheet.title); setArtist(artistName); setTags(sheet.tags.join(', ')); setCopies(String(copiesBought(sheet.id, d.lines))); setEditing(true); }}>Edit details</button>
       )}
 
       <div className="card">
