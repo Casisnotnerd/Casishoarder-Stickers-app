@@ -1,6 +1,6 @@
 import type { Artist, Order, OrderLine, Sheet, ShareLink, Usage } from '../domain/types';
 import { copiesOwned, usageError } from '../domain/holdings';
-import type { NewLine, NewOrder, NewSheet, PhotoKind, PhotoStore, Repo, SharedSheet, SheetPatch, Snapshot } from './repo';
+import type { ArtistPatch, NewLine, NewOrder, NewSheet, PhotoKind, PhotoStore, Repo, SharedSheet, SheetPatch, Snapshot } from './repo';
 import { randomToken } from './token';
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
@@ -24,9 +24,18 @@ export class MemoryRepo implements Repo {
   }
 
   async createArtist(name: string): Promise<Artist> {
-    const a: Artist = { id: this.nextId('artist'), name: name.trim(), aliases: [] };
+    const a: Artist = { id: this.nextId('artist'), name: name.trim(), aliases: [], avatarPath: null, avatarBytes: 0 };
     this.s.artists.push(a);
     return clone(a);
+  }
+
+  async updateArtist(id: string, patch: ArtistPatch): Promise<void> {
+    const a = this.s.artists.find((x) => x.id === id);
+    if (!a) throw new Error('Artist not found.');
+    if (patch.name !== undefined) a.name = patch.name.trim();
+    if (patch.aliases !== undefined) a.aliases = patch.aliases;
+    if (patch.avatarPath !== undefined) a.avatarPath = patch.avatarPath;
+    if (patch.avatarBytes !== undefined) a.avatarBytes = patch.avatarBytes;
   }
 
   async mergeArtists(keepId: string, mergeId: string): Promise<void> {

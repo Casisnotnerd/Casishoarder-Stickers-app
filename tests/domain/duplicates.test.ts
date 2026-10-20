@@ -5,7 +5,7 @@ const sheets: Sheet[] = [
   { id: 'w', artistId: 'aP', title: 'Winter', tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt: '' },
   { id: 'x', artistId: null, title: '계란이 좋아', tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt: '' },
 ];
-const artists: Artist[] = [{ id: 'aJ', name: 'JUIMJUIM', aliases: ['Juimsuim'] }];
+const artists: Artist[] = [{ id: 'aJ', name: 'JUIMJUIM', aliases: ['Juimsuim'], avatarPath: null, avatarBytes: 0 }];
 
 test('findSameTitle matches normalised title, same or unknown artist', () => {
   expect(findSameTitle('  winter ', 'aP', sheets)?.id).toBe('w');

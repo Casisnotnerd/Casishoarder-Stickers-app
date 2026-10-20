@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ShareLink } from '../../domain/types';
 import { collectionCsv } from '../../domain/csv';
 import { useData } from '../DataProvider';
+import { usePhotoUrl } from '../usePhotoUrl';
 import { downloadText } from '../download';
 
 const FREE_STORAGE_BYTES = 1024 ** 3; // Supabase free plan: 1 GB file storage
@@ -53,17 +54,36 @@ export function Settings({ onSignOut }: { onSignOut?: () => void }) {
 
       <h2>Artists</h2>
       <div className="card">
+        <p className="hint">Tap an artist to set their avatar photo.</p>
+        <div className="row" style={{ flexWrap: 'wrap' }}>
+          {d.artists.map((a) => (
+            <label key={a.id} style={{ textAlign: 'center', width: 80 }}>
+              <Avatar id={a.id} path={a.avatarPath} />
+              <div className="hint" style={{ fontSize: '0.75rem' }}>{a.name}</div>
+              <input type="file" accept="image/*" style={{ display: 'none' }}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const up = await d.photos.upload('thumbs', file);
+                  await d.repo.updateArtist(a.id, { avatarPath: up.path, avatarBytes: up.bytes });
+                  await d.reload();
+                }} />
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="card">
         <p className="hint">Same artist under two names? Merge them.</p>
         <div className="row">
           <label>Keep
-            <select value={keep} onChange={(e) => setKeep(e.target.value)}>
-              <option value="">Choose…</option>
+            <select value={keep} onChange={(e) => setKeep(e.target.value)} aria-label="Keep">
+              <option value="">Choose...</option>
               {d.artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </label>
           <label>Merge into it
-            <select value={merge} onChange={(e) => setMerge(e.target.value)}>
-              <option value="">Choose…</option>
+            <select value={merge} onChange={(e) => setMerge(e.target.value)} aria-label="Merge into it">
+              <option value="">Choose...</option>
               {d.artists.filter((a) => a.id !== keep).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </label>
@@ -84,4 +104,9 @@ export function Settings({ onSignOut }: { onSignOut?: () => void }) {
       <p className="hint">Home currency: SGD.</p>
     </main>
   );
+}
+
+function Avatar({ path }: { id: string; path: string | null }) {
+  const url = usePhotoUrl('thumbs', path);
+  return url ? <img src={url} alt="" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#eee', margin: '0 auto' }} />;
 }

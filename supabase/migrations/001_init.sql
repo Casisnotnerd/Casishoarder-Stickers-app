@@ -4,6 +4,8 @@ create table public.artists (
   owner uuid not null default auth.uid() references auth.users on delete cascade,
   name text not null,
   aliases text[] not null default '{}',
+  avatar_path text,
+  avatar_bytes integer not null default 0,
   created_at timestamptz not null default now()
 );
 

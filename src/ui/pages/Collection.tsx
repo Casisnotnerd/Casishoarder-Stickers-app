@@ -42,18 +42,13 @@ export function Collection() {
         </label>
       </div>
 
-      <div className="tabstrip" role="group" aria-label="Artist">
-        <button className="tab" aria-pressed={f.artistId === null} onClick={() => setF({ ...f, artistId: null })}>All</button>
-        {artists.map((a) => {
-          const c = artistColor(a.id);
-          return (
-            <button key={a.id} className="tab artist" aria-pressed={f.artistId === a.id}
-              style={{ '--tab': c.tab, '--ink': c.ink } as CSSProperties}
-              onClick={() => setF({ ...f, artistId: f.artistId === a.id ? null : a.id })}>
-              {a.name}
-            </button>
-          );
-        })}
+      <div className="row" style={{ marginBottom: 8 }}>
+        <select aria-label="Artist" value={f.artistId ?? ''} onChange={(e) => setF({ ...f, artistId: e.target.value || null })}>
+          <option value="">All artists</option>
+          {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+        <button className="tab" aria-pressed={!f.showUsedUp} onClick={() => setF({ ...f, showUsedUp: false })}>Latest</button>
+        <button className="tab" aria-pressed={f.showUsedUp} onClick={() => setF({ ...f, showUsedUp: true })}>Used up</button>
       </div>
 
       <div className="shelf">
@@ -87,8 +82,8 @@ function Entry({ sheet, artist, copies }: { sheet: Sheet; artist: string; copies
   return (
     <Link className={`entry${copies > 0 ? '' : ' usedup'}`} to={`/sheet/${sheet.id}`} style={{ '--tab': c.tab } as CSSProperties}>
       {url ? <img className="thumb" src={url} alt="" loading="lazy" /> : <div className="thumb" />}
+      <span className="sr-only">{sheet.title}</span>
       <div className="who">
-        <div className="title">{sheet.title}</div>
         <div className="artist">{artist || 'Unknown artist'}</div>
       </div>
       <div className="count" aria-label={label}>{copies > 0 ? copies : 'Used up'}</div>

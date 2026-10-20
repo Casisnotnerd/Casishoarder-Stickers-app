@@ -2,6 +2,8 @@ export interface Artist {
   id: string;
   name: string;
   aliases: string[];
+  avatarPath: string | null;
+  avatarBytes: number;
 }
 
 export interface Sheet {

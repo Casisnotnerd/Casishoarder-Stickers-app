@@ -10,6 +10,7 @@ export interface Snapshot {
 
 export type NewSheet = Omit<Sheet, 'id' | 'createdAt'>;
 export type SheetPatch = Partial<Pick<Sheet, 'artistId' | 'title' | 'tags'>>;
+export type ArtistPatch = Partial<Pick<Artist, 'name' | 'aliases' | 'avatarPath' | 'avatarBytes'>>;
 export type NewOrder = Omit<Order, 'id' | 'createdAt' | 'isUnknown'>;
 export type NewLine = Omit<OrderLine, 'id'>;
 
@@ -23,6 +24,7 @@ export interface SharedSheet {
 export interface Repo {
   loadAll(): Promise<Snapshot>;
   createArtist(name: string): Promise<Artist>;
+  updateArtist(id: string, patch: ArtistPatch): Promise<void>;
   mergeArtists(keepId: string, mergeId: string): Promise<void>;
   createSheet(input: NewSheet): Promise<Sheet>;
   updateSheet(id: string, patch: SheetPatch): Promise<void>;

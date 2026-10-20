@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Artist, Order, OrderLine, Sheet, ShareLink, Usage } from '../domain/types';
 import { usageError } from '../domain/holdings';
-import type { NewLine, NewOrder, NewSheet, PhotoKind, PhotoStore, Repo, SharedSheet, SheetPatch, Snapshot } from './repo';
+import type { ArtistPatch, NewLine, NewOrder, NewSheet, PhotoKind, PhotoStore, Repo, SharedSheet, SheetPatch, Snapshot } from './repo';
 import { randomToken } from './token';
 
 type Row = Record<string, unknown>;
@@ -12,7 +12,7 @@ function ok<T>(r: Res<T>): T {
   return r.data as T;
 }
 
-const artistFrom = (r: Row): Artist => ({ id: r.id as string, name: r.name as string, aliases: (r.aliases as string[]) ?? [] });
+const artistFrom = (r: Row): Artist => ({ id: r.id as string, name: r.name as string, aliases: (r.aliases as string[]) ?? [], avatarPath: (r.avatar_path as string | null) ?? null, avatarBytes: Number(r.avatar_bytes ?? 0) });
 const sheetFrom = (r: Row): Sheet => ({
   id: r.id as string, artistId: (r.artist_id as string | null) ?? null, title: r.title as string,
   tags: (r.tags as string[]) ?? [], photoPath: (r.photo_path as string | null) ?? null,
@@ -72,6 +72,15 @@ export class SupabaseRepo implements Repo {
 
   async createArtist(name: string): Promise<Artist> {
     return artistFrom(ok(await this.db.from('artists').insert({ name: name.trim() }).select().single()) as Row);
+  }
+
+  async updateArtist(id: string, patch: ArtistPatch): Promise<void> {
+    const row: Row = {};
+    if (patch.name !== undefined) row.name = patch.name.trim();
+    if (patch.aliases !== undefined) row.aliases = patch.aliases;
+    if (patch.avatarPath !== undefined) row.avatar_path = patch.avatarPath;
+    if (patch.avatarBytes !== undefined) row.avatar_bytes = patch.avatarBytes;
+    ok(await this.db.from('artists').update(row).eq('id', id));
   }
 
   async mergeArtists(keepId: string, mergeId: string): Promise<void> {
