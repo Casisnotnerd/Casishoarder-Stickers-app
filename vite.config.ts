@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      workbox: { skipWaiting: true, clientsClaim: true },
+      workbox: { skipWaiting: true, clientsClaim: true, globIgnores: ['**/*.wasm'], maximumFileSizeToCacheInBytes: 10 * 1024 * 1024 },
       manifest: {
         name: 'Sticker Shelf',
         short_name: 'Stickers',
