@@ -83,14 +83,14 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
     setRect(fullRect(bmp.width, bmp.height));
   };
 
-  const rotate = async () => {
+  const rotate = async (dir: 1 | -1) => {
     if (!img) return;
     const canvas = document.createElement('canvas');
     canvas.width = img.height;
     canvas.height = img.width;
     const ctx = canvas.getContext('2d')!;
     ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(Math.PI / 2);
+    ctx.rotate(dir * Math.PI / 2);
     ctx.drawImage(img, -img.width / 2, -img.height / 2);
     const newBmp = await createImageBitmap(canvas);
     if (src) URL.revokeObjectURL(src);
@@ -126,7 +126,10 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
         <CropBox src={src} naturalW={img.width} naturalH={img.height} value={rect} onChange={setRect} />
       )}
       {img && !existingSheetId && (
-        <button type="button" onClick={() => void rotate()}>Rotate 90°</button>
+        <div className="row">
+          <button type="button" onClick={() => void rotate(-1)}>Rotate left</button>
+          <button type="button" onClick={() => void rotate(1)}>Rotate right</button>
+        </div>
       )}
       {img && !existingSheetId && (
         <div className="card">

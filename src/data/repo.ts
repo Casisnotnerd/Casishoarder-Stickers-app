@@ -32,6 +32,7 @@ export interface Repo {
   updateOrder(id: string, patch: Partial<NewOrder>): Promise<void>;
   getOrCreateUnknownOrder(): Promise<Order>;
   addLine(input: NewLine): Promise<OrderLine>;
+  updateLine(id: string, patch: { quantity?: number; priceMinor?: number | null; estimated?: boolean }): Promise<void>;
   addUsage(sheetId: string, quantity: number, usedOn: string): Promise<Usage>;
   getShareLink(): Promise<ShareLink | null>;
   setShareLinkEnabled(enabled: boolean): Promise<ShareLink>;

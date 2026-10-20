@@ -112,9 +112,16 @@ export function SheetDetail() {
             if (!o) return null;
             return (
               <tr key={l.id}>
-                <td>{o.isUnknown ? 'Unknown' : o.orderDate ?? '—'}{o.estimated || l.estimated ? ' (est.)' : ''}</td>
+                <td>{o.isUnknown ? 'Unknown' : o.orderDate ?? '-'}{o.estimated || l.estimated ? ' (est.)' : ''}</td>
                 <td>{o.shop ?? ''}</td>
-                <td>{l.quantity}</td>
+                <td>
+                  <input inputMode="numeric" defaultValue={l.quantity} style={{ width: 50 }}
+                    onBlur={async (e) => {
+                      const v = Number(e.target.value);
+                      try { await d.repo.updateLine(l.id, { quantity: v }); await d.reload(); }
+                      catch (err) { setMsg(err instanceof Error ? err.message : String(err)); }
+                    }} />
+                </td>
                 <td>{formatMoney(l.priceMinor, o.currency)}</td>
                 <td>{formatMoney(unitSgdMinor(l, o, linesOf(o, d.lines)), 'SGD')}</td>
               </tr>

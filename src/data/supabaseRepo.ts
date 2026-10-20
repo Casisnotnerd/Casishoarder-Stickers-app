@@ -134,6 +134,14 @@ export class SupabaseRepo implements Repo {
     return lineFrom(ok(await this.db.from('order_lines').insert(row).select().single()) as Row);
   }
 
+  async updateLine(id: string, patch: { quantity?: number; priceMinor?: number | null; estimated?: boolean }): Promise<void> {
+    const row: Row = {};
+    if (patch.quantity !== undefined) row.quantity = patch.quantity;
+    if (patch.priceMinor !== undefined) row.price_minor = patch.priceMinor;
+    if (patch.estimated !== undefined) row.estimated = patch.estimated;
+    ok(await this.db.from('order_lines').update(row).eq('id', id));
+  }
+
   async addUsage(sheetId: string, quantity: number, usedOn: string): Promise<Usage> {
     const lines = (ok(await this.db.from('order_lines').select('*').eq('sheet_id', sheetId)) as Row[]).map(lineFrom);
     const usages = (ok(await this.db.from('usages').select('*').eq('sheet_id', sheetId)) as Row[]).map(usageFrom);

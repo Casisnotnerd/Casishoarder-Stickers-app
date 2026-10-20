@@ -94,6 +94,17 @@ export class MemoryRepo implements Repo {
     return clone(l);
   }
 
+  async updateLine(id: string, patch: { quantity?: number; priceMinor?: number | null; estimated?: boolean }): Promise<void> {
+    const l = this.s.lines.find((x) => x.id === id);
+    if (!l) throw new Error('Line not found.');
+    if (patch.quantity !== undefined) {
+      if (!Number.isInteger(patch.quantity) || patch.quantity < 1) throw new Error('Quantity must be 1 or more.');
+      l.quantity = patch.quantity;
+    }
+    if (patch.priceMinor !== undefined) l.priceMinor = patch.priceMinor;
+    if (patch.estimated !== undefined) l.estimated = patch.estimated;
+  }
+
   async addUsage(sheetId: string, quantity: number, usedOn: string): Promise<Usage> {
     const err = usageError(sheetId, quantity, this.s.lines, this.s.usages);
     if (err) throw new Error(err);
