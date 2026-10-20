@@ -34,7 +34,7 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
   useEffect(() => () => { if (src) URL.revokeObjectURL(src); }, [src]);
 
   useEffect(() => {
-    if (!img || !rect || existingSheetId) { setImageHash(null); setOcrText(''); return; }
+    if (!img || !rect || existingSheetId) { setImageHash(null); return; }
     let cancelled = false;
     (async () => {
       try {
@@ -45,27 +45,29 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
         if (!cancelled) setImageHash(null);
       }
     })();
-    setOcrBusy(true);
-    (async () => {
-      try {
-        const photo = await cropToJpeg(img, rect, PHOTO.maxSide, PHOTO.quality);
-        const { runOcr } = await import('../image/ocr');
-        const text = await runOcr(photo);
-        if (cancelled) return;
-        setOcrText(text);
-        setOcrError('');
-        if (text && !title.trim()) {
-          const firstLine = text.split(/\n/).map((l) => l.trim()).find((l) => l.length > 0);
-          if (firstLine) setTitle(firstLine);
-        }
-      } catch (e) {
-        if (!cancelled) { setOcrText(''); setOcrError(e instanceof Error ? e.message : String(e)); }
-      } finally {
-        if (!cancelled) setOcrBusy(false);
-      }
-    })();
     return () => { cancelled = true; };
   }, [img, rect, existingSheetId]);
+
+  const runOcrNow = async () => {
+    if (!img || !rect || existingSheetId) return;
+    setOcrBusy(true);
+    setOcrError('');
+    try {
+      const photo = await cropToJpeg(img, rect, PHOTO.maxSide, PHOTO.quality);
+      const mod = await import('../image/ocr');
+      const text = await mod.runOcr(photo);
+      setOcrText(text);
+      if (text && !title.trim()) {
+        const firstLine = text.split(/\n/).map((l) => l.trim()).find((l) => l.length > 0);
+        if (firstLine) setTitle(firstLine);
+      }
+    } catch (e) {
+      setOcrText('');
+      setOcrError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setOcrBusy(false);
+    }
+  };
 
   const artistId = findArtistByName(artistName, data.artists)?.id ?? null;
   const same = !dismissed && !existingSheetId ? findSameTitle(title, artistId, data.sheets) : null;
@@ -109,10 +111,11 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
       )}
       {img && !existingSheetId && (
         <div className="card">
-          <p className="hint">OCR {ocrBusy ? '(reading text...)' : ''}</p>
+          <button type="button" onClick={() => void runOcrNow()} disabled={ocrBusy}>
+            {ocrBusy ? 'Reading text…' : 'Read text (OCR)'}
+          </button>
           {ocrError && <p className="error">{ocrError}</p>}
           {ocrText && <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>{ocrText}</pre>}
-          {!ocrText && !ocrBusy && !ocrError && <p className="hint">No text detected.</p>}
         </div>
       )}
       {existing ? (
