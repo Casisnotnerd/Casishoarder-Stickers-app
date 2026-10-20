@@ -57,10 +57,9 @@ export function SheetDraftEditor({ currency, onDone, onCancel }: {
       const mod = await import('../image/ocr');
       const text = await mod.runOcr(photo);
       setOcrText(text);
-      if (text && !title.trim()) {
-        const firstLine = text.split(/\n/).map((l) => l.trim()).find((l) => l.length > 0);
-        if (firstLine) setTitle(firstLine);
-      }
+      const lines = text.split(/\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+      if (lines.length > 0 && !title.trim()) setTitle(lines[0]);
+      if (lines.length > 1 && !artistName.trim()) setArtistName(lines[1]);
     } catch (e) {
       setOcrText('');
       setOcrError(e instanceof Error ? e.message : String(e));
