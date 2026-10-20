@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ShareLink } from '../../domain/types';
 import { collectionCsv } from '../../domain/csv';
+import { normalizeText } from '../../domain/text';
 import { useData } from '../DataProvider';
 import { usePhotoUrl } from '../usePhotoUrl';
 import { downloadText } from '../download';
@@ -15,6 +16,23 @@ export function Settings({ onSignOut }: { onSignOut?: () => void }) {
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => { void d.repo.getShareLink().then(setShare); }, [d.repo]);
+
+  // Auto-merge artists with identical normalized names.
+  useEffect(() => {
+    (async () => {
+      const seen = new Map<string, string>();
+      for (const a of d.artists) {
+        const n = normalizeText(a.name);
+        if (seen.has(n)) {
+          try { await d.repo.mergeArtists(seen.get(n)!, a.id); } catch { /* ignore */ }
+        } else {
+          seen.set(n, a.id);
+        }
+      }
+      await d.reload();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const used = d.sheets.reduce((n, s) => n + s.photoBytes, 0);
   const pct = (used / FREE_STORAGE_BYTES) * 100;

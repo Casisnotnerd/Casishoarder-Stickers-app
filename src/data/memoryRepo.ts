@@ -1,5 +1,6 @@
 import type { Artist, Order, OrderLine, Sheet, ShareLink, Usage } from '../domain/types';
 import { copiesOwned, usageError } from '../domain/holdings';
+import { normalizeText } from '../domain/text';
 import type { ArtistPatch, NewLine, NewOrder, NewSheet, PhotoKind, PhotoStore, Repo, SharedSheet, SheetPatch, Snapshot } from './repo';
 import { randomToken } from './token';
 
@@ -24,6 +25,9 @@ export class MemoryRepo implements Repo {
   }
 
   async createArtist(name: string): Promise<Artist> {
+    const n = normalizeText(name);
+    const existing = this.s.artists.find((a) => normalizeText(a.name) === n);
+    if (existing) return clone(existing);
     const a: Artist = { id: this.nextId('artist'), name: name.trim(), aliases: [], avatarPath: null, avatarBytes: 0 };
     this.s.artists.push(a);
     return clone(a);

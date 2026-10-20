@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Artist, Order, OrderLine, Sheet, ShareLink, Usage } from '../domain/types';
 import { usageError } from '../domain/holdings';
+import { normalizeText } from '../domain/text';
 import type { ArtistPatch, NewLine, NewOrder, NewSheet, PhotoKind, PhotoStore, Repo, SharedSheet, SheetPatch, Snapshot } from './repo';
 import { randomToken } from './token';
 
@@ -71,6 +72,10 @@ export class SupabaseRepo implements Repo {
   }
 
   async createArtist(name: string): Promise<Artist> {
+    const rows = (ok(await this.db.from('artists').select('*')) as Row[]).map(artistFrom);
+    const n = normalizeText(name);
+    const existing = rows.find((a) => normalizeText(a.name) === n);
+    if (existing) return existing;
     return artistFrom(ok(await this.db.from('artists').insert({ name: name.trim() }).select().single()) as Row);
   }
 

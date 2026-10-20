@@ -16,7 +16,12 @@ export function Collection() {
   const shown = useMemo(() => filterSheets(f, d), [f, d]);
   const tags = useMemo(() => allTags(d.sheets), [d.sheets]);
   const artistName = useMemo(() => new Map(d.artists.map((a) => [a.id, a.name])), [d.artists]);
-  const artists = useMemo(() => [...d.artists].sort((a, b) => a.name.localeCompare(b.name)), [d.artists]);
+  const artists = useMemo(() => {
+    const seen = new Set<string>();
+    return [...d.artists]
+      .filter((a) => { const n = a.name.trim().toLowerCase(); if (seen.has(n)) return false; seen.add(n); return true; })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [d.artists]);
   const totalCopies = useMemo(
     () => d.sheets.reduce((n, s) => n + Math.max(0, copiesOwned(s.id, d.lines, d.usages)), 0),
     [d.sheets, d.lines, d.usages],
