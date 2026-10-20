@@ -1,30 +1,20 @@
-import { createWorker } from 'tesseract.js';
-
-export async function preprocessImage(blob: Blob): Promise<Blob> {
-  const bmp = await createImageBitmap(blob);
-  const minW = 1200;
-  const scale = bmp.width < minW ? minW / bmp.width : 1;
-  const w = Math.round(bmp.width * scale);
-  const h = Math.round(bmp.height * scale);
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, w, h);
-  ctx.drawImage(bmp, 0, 0, w, h);
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
-  });
-}
+import { PaddleOcrService, V5_MOBILE_MODEL } from 'ppu-paddle-ocr/web';
 
 export async function runOcr(blob: Blob): Promise<string> {
-  const processed = await preprocessImage(blob);
-  const worker = await createWorker('eng+kor');
+  const service = new PaddleOcrService({ model: V5_MOBILE_MODEL });
+  await service.initialize();
   try {
-    const { data } = await worker.recognize(processed);
-    return (data.text ?? '').trim();
+    const bmp = await createImageBitmap(blob);
+    const canvas = document.createElement('canvas');
+    canvas.width = bmp.width;
+    canvas.height = bmp.height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(bmp, 0, 0);
+    const result = await service.recognize(canvas, { minimumConfidence: 0.5 });
+    const items = (result.lines ?? []).flat().filter((r) => r.confidence >= 0.5);
+    items.sort((a, b) => (a.box?.y ?? 0) - (b.box?.y ?? 0) || (a.box?.x ?? 0) - (b.box?.x ?? 0));
+    return items.map((r) => r.text).join('\n').trim();
   } finally {
-    await worker.terminate();
+    await service.destroy();
   }
 }
