@@ -19,5 +19,5 @@ test('shows total, exact/estimated and missing SGD count', async () => {
   );
   expect(await screen.findByText(/1 order is missing the SGD amount/)).toBeTruthy();
   expect(screen.getByTestId('total').textContent).toMatch(/15\.60/);
-  expect(screen.getByText('JUIMJUIM')).toBeTruthy();
+  expect(screen.getByText('JUIMJUIM', { selector: 'span' })).toBeTruthy();
 });
