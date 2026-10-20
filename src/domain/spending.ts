@@ -31,7 +31,7 @@ function add(map: Map<string, number>, key: string, v: number) {
   map.set(key, (map.get(key) ?? 0) + v);
 }
 
-export function summarizeSpending(d: SpendingData): SpendingSummary {
+export function summarizeSpending(d: SpendingData, filterArtistId?: string | null): SpendingSummary {
   const artistName = new Map(d.artists.map((a) => [a.id, a.name]));
   const sheetArtist = new Map(
     d.sheets.map((s) => [s.id, (s.artistId && artistName.get(s.artistId)) || UNKNOWN_ARTIST]),
@@ -41,8 +41,30 @@ export function summarizeSpending(d: SpendingData): SpendingSummary {
   const missing: string[] = [];
   let total = 0, exact = 0, estimated = 0, shipping = 0, other = 0;
 
+  const filterSheets = filterArtistId
+    ? new Set(d.sheets.filter((s) => s.artistId === filterArtistId).map((s) => s.id))
+    : null;
+
   for (const order of d.orders) {
     const ol = linesOf(order, d.lines);
+    const filteredOl = filterSheets ? ol.filter((l) => filterSheets.has(l.sheetId)) : ol;
+    if (filteredOl.length === 0) continue;
+
+    if (filterSheets) {
+      let hasMissing = false;
+      for (const l of filteredOl) {
+        const v = lineSgdMinor(l, order, ol);
+        if (v === null) { hasMissing = true; continue; }
+        total += v;
+        add(byMonth, order.orderDate ? order.orderDate.slice(0, 7) : NO_DATE, v);
+        add(byArtist, sheetArtist.get(l.sheetId) ?? UNKNOWN_ARTIST, v);
+        if (order.estimated || l.estimated) estimated += v;
+        else exact += v;
+      }
+      if (hasMissing) missing.push(order.id);
+      continue;
+    }
+
     const paid = effectiveSgdPaidMinor(order, ol);
     if (paid === null) {
       if (!order.isUnknown) missing.push(order.id);
