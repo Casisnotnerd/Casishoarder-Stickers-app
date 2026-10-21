@@ -1,9 +1,10 @@
-import { NavLink, Route, Routes } from 'react-router-dom';
+import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { ChartColumn, Layers, Plus, Search, Settings as SettingsIcon } from 'lucide-react';
 import { useData } from './DataProvider';
 import { Collection } from './pages/Collection';
 import { AddOrder } from './pages/AddOrder';
 import { BulkAdd } from './pages/BulkAdd';
+import { AddChoice } from './pages/AddChoice';
 import { SheetDetail } from './pages/SheetDetail';
 import { Spending } from './pages/Spending';
 import { Orders } from './pages/Orders';
@@ -23,8 +24,10 @@ export function Shell({ demo, onSignOut }: { demo: boolean; onSignOut?: () => vo
         <Routes>
           <Route path="/" element={<Collection />} />
           <Route path="/search" element={<Collection searchMode />} />
-          <Route path="/add" element={<AddOrder />} />
-          <Route path="/bulk" element={<BulkAdd />} />
+          <Route path="/add" element={<AddChoice />} />
+          <Route path="/add/one" element={<AddOrder />} />
+          <Route path="/add/many" element={<BulkAdd />} />
+          <Route path="/bulk" element={<BulkRedirect />} />
           <Route path="/sheet/:id" element={<SheetDetail />} />
           <Route path="/spending" element={<Spending />} />
           <Route path="/orders" element={<Orders />} />
@@ -41,4 +44,9 @@ export function Shell({ demo, onSignOut }: { demo: boolean; onSignOut?: () => vo
       </nav>
     </div>
   );
+}
+
+function BulkRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/add/many${search}`} replace />;
 }

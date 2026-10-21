@@ -68,3 +68,45 @@ test('tag dropdown is shown even before any tags exist', async () => {
   );
   expect(await screen.findByLabelText('Tag')).toBeTruthy();
 });
+
+test('home shows the 10 newest, See all shows the rest; searching shows every match', async () => {
+  const r = new MemoryRepo();
+  const o = await r.getOrCreateUnknownOrder();
+  for (let i = 1; i <= 13; i++) {
+    const s = await r.createSheet({ artistId: null, title: `Sheet ${i}`, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null });
+    await r.addLine({ orderId: o.id, sheetId: s.id, quantity: 1, priceMinor: null, estimated: false });
+  }
+  render(
+    <MemoryRouter>
+      <DataProvider repo={r} photos={new MemoryPhotoStore()}>
+        <Collection />
+      </DataProvider>
+    </MemoryRouter>,
+  );
+  expect(await screen.findByText('Sheet 13')).toBeTruthy();
+  expect(screen.getByText('Sheet 4')).toBeTruthy();
+  expect(screen.queryByText('Sheet 3')).toBeNull();
+  fireEvent.click(screen.getByText('See all 13 sheets'));
+  expect(screen.getByText('Sheet 1')).toBeTruthy();
+  expect(screen.queryByText(/See all/)).toBeNull();
+});
+
+test('a search on the home page is not limited to 10', async () => {
+  const r = new MemoryRepo();
+  const o = await r.getOrCreateUnknownOrder();
+  for (let i = 1; i <= 12; i++) {
+    const s = await r.createSheet({ artistId: null, title: `Bear ${i}`, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null });
+    await r.addLine({ orderId: o.id, sheetId: s.id, quantity: 1, priceMinor: null, estimated: false });
+  }
+  render(
+    <MemoryRouter>
+      <DataProvider repo={r} photos={new MemoryPhotoStore()}>
+        <Collection />
+      </DataProvider>
+    </MemoryRouter>,
+  );
+  await screen.findByText('Bear 12');
+  fireEvent.change(screen.getByPlaceholderText('Find a sticker, artist or tag'), { target: { value: 'bear' } });
+  expect(screen.getByText('Bear 1')).toBeTruthy();
+  expect(screen.getByText('12 little finds')).toBeTruthy();
+});

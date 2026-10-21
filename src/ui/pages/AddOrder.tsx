@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { EMPTY_ORDER_FORM, parseOrderForm, type OrderForm } from '../../domain/orderForm';
 import { derivedRate, orderMismatch } from '../../domain/money';
 import { formatMoney, toMinor } from '../../domain/currency';
@@ -49,10 +49,6 @@ export function AddOrder() {
   return (
     <main className="page">
       <h1>Add sheets</h1>
-      <Link to="/bulk" className="card bulk-link">
-        <b>Lots of sheets?</b>
-        <span>Photograph several sheets at once and fill in the details together.</span>
-      </Link>
       <label>
         <input type="checkbox" checked={unknownOrder} onChange={(e) => setUnknown(e.target.checked)} />
         Old sheets: I don't know the order (date / price unknown)

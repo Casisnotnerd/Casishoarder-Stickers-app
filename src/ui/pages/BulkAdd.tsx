@@ -193,7 +193,7 @@ export function BulkAdd() {
             <label>Shipping (S$)<input inputMode="decimal" value={info.shipping} onChange={(e) => setInfo({ ...info, shipping: e.target.value })} /></label>
           </div>
           <button className="primary" onClick={() => setStep('photo')}>Next: take a photo</button>
-          <p className="hint">Only one sheet? <Link to="/add">Add a single sheet</Link></p>
+          <p className="hint">Only one sheet? <Link to="/add/one">Add a single sheet</Link></p>
         </section>
       )}
 

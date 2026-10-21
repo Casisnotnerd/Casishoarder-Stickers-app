@@ -10,6 +10,8 @@ import { addedLabel, addedThisMonth, SORT_LABELS, sortSheets, type SortOrder } f
 import { useData } from '../DataProvider';
 import { usePhotoUrl } from '../usePhotoUrl';
 
+const LATEST_LIMIT = 10;
+
 const isFiltering = (f: SheetFilter) =>
   !!(f.text.trim() || f.artistId || f.tag || f.dateFrom || f.dateTo || f.minSgdMinor !== null || f.maxSgdMinor !== null);
 
@@ -19,6 +21,7 @@ export function Collection({ searchMode = false }: { searchMode?: boolean }) {
   const [order, setOrder] = useState<SortOrder>('newest');
   const [minS, setMinS] = useState('');
   const [maxS, setMaxS] = useState('');
+  const [showAll, setShowAll] = useState(false);
   const filtered = useMemo(() => filterSheets(f, d), [f, d]);
   const shown = useMemo(() => sortSheets(filtered, order, d.lines, d.usages), [filtered, order, d.lines, d.usages]);
   const tags = useMemo(() => allTags(d.sheets), [d.sheets]);
@@ -31,6 +34,9 @@ export function Collection({ searchMode = false }: { searchMode?: boolean }) {
   }, [d.artists]);
   const thisMonth = useMemo(() => addedThisMonth(d.sheets), [d.sheets]);
   const filtering = isFiltering(f);
+  // The home view shows only the 10 newest; searching, filters, "Used up" or "See all" show everything.
+  const limited = !searchMode && !filtering && !f.showUsedUp && !showAll && shown.length > LATEST_LIMIT;
+  const visible = limited ? shown.slice(0, LATEST_LIMIT) : shown;
 
   return (
     <main className="page journal">
@@ -44,7 +50,7 @@ export function Collection({ searchMode = false }: { searchMode?: boolean }) {
       ) : (
         <header className="journal-head">
           <div>
-            <p className="brand">Sticker Shelf</p>
+            <p className="brand">Sticker Vault</p>
             <h1>Your sticker story.</h1>
           </div>
           <Link to="/settings" className="avatar" aria-label="Settings">C</Link>
@@ -94,7 +100,7 @@ export function Collection({ searchMode = false }: { searchMode?: boolean }) {
       </div>
 
       <div className="section-head">
-        <h2>{filtering || searchMode ? `${shown.length} little ${shown.length === 1 ? 'find' : 'finds'}` : 'Latest additions'}</h2>
+        <h2>{filtering || searchMode ? `${shown.length} little ${shown.length === 1 ? 'find' : 'finds'}` : showAll ? `All ${shown.length} sheets` : 'Latest additions'}</h2>
         <label className="sort">
           <span className="visually-hidden">Sort</span>
           <select aria-label="Sort" value={order} onChange={(e) => setOrder(e.target.value as SortOrder)}>
@@ -105,11 +111,14 @@ export function Collection({ searchMode = false }: { searchMode?: boolean }) {
       </div>
 
       <div className="shelf">
-        {shown.map((s) => (
+        {visible.map((s) => (
           <Card key={s.id} sheet={s} artist={s.artistId ? artistName.get(s.artistId) ?? '' : ''}
             copies={copiesOwned(s.id, d.lines, d.usages)} />
         ))}
       </div>
+      {limited && (
+        <button type="button" className="see-all" onClick={() => setShowAll(true)}>See all {shown.length} sheets</button>
+      )}
       {d.sheets.length === 0 && <p className="empty">Your shelf is empty. Tap + to log your first sheet.</p>}
       {d.sheets.length > 0 && shown.length === 0 && <p className="empty">No sheets match.</p>}
 
