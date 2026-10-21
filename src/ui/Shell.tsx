@@ -3,6 +3,7 @@ import { ChartColumn, Layers, Plus, Search, Settings as SettingsIcon } from 'luc
 import { useData } from './DataProvider';
 import { Collection } from './pages/Collection';
 import { AddOrder } from './pages/AddOrder';
+import { BulkAdd } from './pages/BulkAdd';
 import { SheetDetail } from './pages/SheetDetail';
 import { Spending } from './pages/Spending';
 import { Orders } from './pages/Orders';
@@ -23,6 +24,7 @@ export function Shell({ demo, onSignOut }: { demo: boolean; onSignOut?: () => vo
           <Route path="/" element={<Collection />} />
           <Route path="/search" element={<Collection searchMode />} />
           <Route path="/add" element={<AddOrder />} />
+          <Route path="/bulk" element={<BulkAdd />} />
           <Route path="/sheet/:id" element={<SheetDetail />} />
           <Route path="/spending" element={<Spending />} />
           <Route path="/orders" element={<Orders />} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { Order } from '../../domain/types';
 import { formatMoney } from '../../domain/currency';
 import { effectiveSgdPaidMinor, linesOf } from '../../domain/money';
@@ -51,6 +51,7 @@ export function Orders() {
                 <span>{o.orderDate ?? 'No date'}{o.estimated ? ' (est.)' : ''} · {o.shop ?? 'No shop'} · {sheets} sheet{sheets === 1 ? '' : 's'}</span>
                 <span>{formatMoney(o.totalMinor, o.currency)} → {formatMoney(effectiveSgdPaidMinor(o, ol), 'SGD')}</span>
                 <button onClick={() => startEdit(o)}>Edit</button>
+                <Link className="button-link" to={`/bulk?order=${o.id}`}>Add photos</Link>
               </div>
             )}
           </div>
