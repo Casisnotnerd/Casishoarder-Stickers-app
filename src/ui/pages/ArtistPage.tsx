@@ -58,6 +58,22 @@ export function ArtistPage() {
     setCropSrc(URL.createObjectURL(file));
     setCropRect(fullRect(bmp.width, bmp.height));
   };
+  const rotateCrop = async (dir: 1 | -1) => {
+    if (!cropImg) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = cropImg.height;
+    canvas.height = cropImg.width;
+    const ctx = canvas.getContext('2d')!;
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(dir * Math.PI / 2);
+    ctx.drawImage(cropImg, -cropImg.width / 2, -cropImg.height / 2);
+    const newBmp = await createImageBitmap(canvas);
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), 'image/jpeg', 0.92));
+    setCropImg(newBmp);
+    setCropSrc(URL.createObjectURL(blob));
+    setCropRect(fullRect(newBmp.width, newBmp.height));
+  };
   const savePicture = async () => {
     if (!folder || !cropImg || !cropRect) return;
     setPicError(false);
@@ -141,6 +157,10 @@ export function ArtistPage() {
               {cropImg && cropSrc && cropRect && (
                 <>
                   <CropBox src={cropSrc} naturalW={cropImg.width} naturalH={cropImg.height} value={cropRect} onChange={setCropRect} />
+                  <div className="row">
+                    <button type="button" disabled={!!picBusy} onClick={() => void rotateCrop(-1)}>Rotate left</button>
+                    <button type="button" disabled={!!picBusy} onClick={() => void rotateCrop(1)}>Rotate right</button>
+                  </div>
                   <div className="row">
                     <button type="button" disabled={!!picBusy} onClick={() => void savePicture()}>Save picture</button>
                     <button type="button" disabled={!!picBusy} onClick={cancelPicture}>Cancel</button>
