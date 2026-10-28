@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownWideNarrow, Search } from 'lucide-react';
 import type { Sheet } from '../../domain/types';
@@ -83,9 +83,7 @@ export function Collection(_props: { searchMode?: boolean }) {
       <div className="shelf">
         {shown.map((s) => (
           <Card key={s.id} sheet={s} artist={s.artistId ? artistName.get(s.artistId) ?? '' : ''}
-            copies={copiesOwned(s.id, d.lines, d.usages)}
-            avatarPath={d.artists.find((a) => a.id === s.artistId)?.avatarPath ?? null}
-            avatarPosition={d.artists.find((a) => a.id === s.artistId)?.avatarPosition ?? null} />
+            copies={copiesOwned(s.id, d.lines, d.usages)} />
         ))}
       </div>
       {d.sheets.length === 0 && <p className="empty">Nothing to search yet. Tap + to add your first sheets.</p>}
@@ -106,18 +104,15 @@ export function Collection(_props: { searchMode?: boolean }) {
   );
 }
 
-export function Card({ sheet, artist, copies, avatarPath, avatarPosition }: { sheet: Sheet; artist: string; copies: number; avatarPath?: string | null; avatarPosition?: string | null }) {
-  const avatarUrl = usePhotoUrl('thumbs', avatarPath ?? null);
-  const thumbUrl = usePhotoUrl('thumbs', sheet.thumbPath);
-  const [imgFailed, setImgFailed] = useState(false);
-  const url = (!imgFailed && avatarUrl) ? avatarUrl : (thumbUrl ?? null);
+export function Card({ sheet, artist, copies }: { sheet: Sheet; artist: string; copies: number }) {
+  const url = usePhotoUrl('thumbs', sheet.thumbPath);
   const c = artistColor(sheet.artistId);
   const label = copies > 0 ? `${copies} ${copies === 1 ? 'copy' : 'copies'}` : 'Used up';
   const added = addedLabel(sheet.createdAt);
   return (
     <Link className={`sticker${copies > 0 ? '' : ' usedup'}`} to={`/sheet/${sheet.id}`} style={{ '--tab': c.tab } as CSSProperties}>
       <div className="mount">
-        {url ? <img src={url} alt="" loading="lazy" style={{ objectPosition: avatarPosition ?? '50% 50%' }} onError={() => setImgFailed(true)} /> : null}
+        {url ? <img src={url} alt="" loading="lazy" /> : null}
         {added && <span className="badge">{added}</span>}
         <span className="copies" aria-label={label}>{copies > 0 ? `×${copies}` : 'Used up'}</span>
       </div>
