@@ -35,16 +35,20 @@ export function ArtistPage() {
     ? [...new Set(d.artists.filter((a) => folder.artistIds.includes(a.id)).map((a) => a.avatarPath).filter((p): p is string => !!p))]
     : [];
 
+  const [picErrorMsg, setPicErrorMsg] = useState('');
   const picture = async (file: File | null) => {
     if (!folder) return;
     setPicError(false);
+    setPicErrorMsg('');
     setPicBusy('Saving picture…');
     try {
       if (file) await setArtistPicture({ repo: d.repo, photos: d.photos, artistIds: folder.artistIds, oldPaths, file });
       else await removeArtistPicture({ repo: d.repo, photos: d.photos, artistIds: folder.artistIds, oldPaths });
       await d.reload();
-    } catch {
+    } catch (e) {
       setPicError(true);
+      setPicErrorMsg(e instanceof Error ? e.message : String(e));
+      console.error('artist picture error:', e);
     } finally {
       setPicBusy(null);
     }
@@ -74,7 +78,7 @@ export function ArtistPage() {
               </label>
               {folder.avatarPath && <button type="button" disabled={!!picBusy} onClick={() => void picture(null)}>Remove picture</button>}
               {picBusy && <p className="hint">{picBusy}</p>}
-              {picError && <p className="error">Couldn't save the picture. Try again.</p>}
+              {picError && <p className="error">Couldn't save the picture. Try again.{picErrorMsg && ` (${picErrorMsg})`}</p>}
             </div>
           )}
           <div className="section-head">
