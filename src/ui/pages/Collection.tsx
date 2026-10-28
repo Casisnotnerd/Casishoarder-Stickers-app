@@ -83,7 +83,8 @@ export function Collection(_props: { searchMode?: boolean }) {
       <div className="shelf">
         {shown.map((s) => (
           <Card key={s.id} sheet={s} artist={s.artistId ? artistName.get(s.artistId) ?? '' : ''}
-            copies={copiesOwned(s.id, d.lines, d.usages)} />
+            copies={copiesOwned(s.id, d.lines, d.usages)}
+            avatarPath={d.artists.find((a) => a.id === s.artistId)?.avatarPath ?? null} />
         ))}
       </div>
       {d.sheets.length === 0 && <p className="empty">Nothing to search yet. Tap + to add your first sheets.</p>}
@@ -104,8 +105,8 @@ export function Collection(_props: { searchMode?: boolean }) {
   );
 }
 
-export function Card({ sheet, artist, copies }: { sheet: Sheet; artist: string; copies: number }) {
-  const url = usePhotoUrl('thumbs', sheet.thumbPath);
+export function Card({ sheet, artist, copies, avatarPath }: { sheet: Sheet; artist: string; copies: number; avatarPath?: string | null }) {
+  const url = usePhotoUrl('thumbs', avatarPath ?? sheet.thumbPath);
   const c = artistColor(sheet.artistId);
   const label = copies > 0 ? `${copies} ${copies === 1 ? 'copy' : 'copies'}` : 'Used up';
   const added = addedLabel(sheet.createdAt);
