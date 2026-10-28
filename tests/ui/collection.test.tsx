@@ -1,8 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { MemoryPhotoStore, MemoryRepo } from '../../src/data/memoryRepo';
 import { DataProvider } from '../../src/ui/DataProvider';
 import { Collection } from '../../src/ui/pages/Collection';
+import { Home } from '../../src/ui/pages/Home';
+import { ArtistPage } from '../../src/ui/pages/ArtistPage';
 
 async function seed() {
   const r = new MemoryRepo();
@@ -69,29 +71,61 @@ test('tag dropdown is shown even before any tags exist', async () => {
   expect(await screen.findByLabelText('Tag')).toBeTruthy();
 });
 
-test('home shows the 10 newest, See all shows the rest; searching shows every match', async () => {
+test('Collection home shows the 10 newest, then artist folders A to Z', async () => {
   const r = new MemoryRepo();
   const o = await r.getOrCreateUnknownOrder();
+  const p = await r.createArtist('papermilio');
+  const m = await r.createArtist('Mumu');
   for (let i = 1; i <= 13; i++) {
-    const s = await r.createSheet({ artistId: null, title: `Sheet ${i}`, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null });
+    const s = await r.createSheet({ artistId: i % 2 ? p.id : m.id, title: `Sheet ${i}`, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null });
     await r.addLine({ orderId: o.id, sheetId: s.id, quantity: 1, priceMinor: null, estimated: false });
   }
   render(
     <MemoryRouter>
       <DataProvider repo={r} photos={new MemoryPhotoStore()}>
-        <Collection />
+        <Home />
       </DataProvider>
     </MemoryRouter>,
   );
   expect(await screen.findByText('Sheet 13')).toBeTruthy();
   expect(screen.getByText('Sheet 4')).toBeTruthy();
   expect(screen.queryByText('Sheet 3')).toBeNull();
-  fireEvent.click(screen.getByText('See all 13 sheets'));
-  expect(screen.getByText('Sheet 1')).toBeTruthy();
-  expect(screen.queryByText(/See all/)).toBeNull();
+  expect(screen.queryByPlaceholderText('Find a sticker, artist or tag')).toBeNull(); // searching lives on Search
+  const names = [...document.querySelectorAll('.folder-name')].map((n) => n.textContent);
+  expect(names).toEqual(['Mumu', 'papermilio']);
+  expect(screen.getByText('7 sheets')).toBeTruthy();
 });
 
-test('a search on the home page is not limited to 10', async () => {
+test('an artist folder lists only that artist, with an Owned / Used up switch', async () => {
+  const r = new MemoryRepo();
+  const o = await r.getOrCreateUnknownOrder();
+  const p = await r.createArtist('papermilio');
+  const add = async (title: string, artistId: string | null) => {
+    const s = await r.createSheet({ artistId, title, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null });
+    await r.addLine({ orderId: o.id, sheetId: s.id, quantity: 1, priceMinor: null, estimated: false });
+    return s;
+  };
+  await add('Winter', p.id);
+  const sp = await add('Spring', p.id);
+  await add('Egg', null);
+  await r.addUsage(sp.id, 1, '2026-10-01');
+  render(
+    <MemoryRouter initialEntries={[`/artist/${p.id}`]}>
+      <DataProvider repo={r} photos={new MemoryPhotoStore()}>
+        <Routes><Route path="/artist/:id" element={<ArtistPage />} /></Routes>
+      </DataProvider>
+    </MemoryRouter>,
+  );
+  expect(await screen.findByText('Winter')).toBeTruthy();
+  expect(screen.queryByText('Spring')).toBeNull();
+  expect(screen.queryByText('Egg')).toBeNull();
+  fireEvent.click(screen.getByText('Used up'));
+  expect(screen.getByText('Spring')).toBeTruthy();
+  expect(screen.queryByText('Winter')).toBeNull();
+  expect(screen.getByText('Collection')).toBeTruthy(); // back link
+});
+
+test('search is never limited to 10', async () => {
   const r = new MemoryRepo();
   const o = await r.getOrCreateUnknownOrder();
   for (let i = 1; i <= 12; i++) {

@@ -176,3 +176,25 @@ th { color: var(--muted); font-weight: 500; font-size: .78rem; }
 .choice-text span { font-size: .85rem; color: var(--muted); }
 .choice > svg { color: var(--muted); }
 .see-all { display: block; width: 100%; margin: 20px 0 0; border-radius: 999px; color: var(--accent); border-color: var(--accent); background: transparent; }
+
+/* Collection = browse: latest row + artist folders */
+.see-link { display: inline-flex; align-items: center; gap: 2px; color: var(--accent); font-size: .85rem; font-weight: 500; text-decoration: none; min-height: 44px; }
+.latest-row { display: grid; grid-auto-flow: column; grid-auto-columns: 132px; gap: 12px; overflow-x: auto; margin: 0 -20px; padding: 0 20px 6px;
+  scroll-snap-type: x proximity; scrollbar-width: none; }
+.latest-row::-webkit-scrollbar { display: none; }
+.latest-row .sticker { scroll-snap-align: start; }
+.latest-row .sticker .mount { height: 120px; }
+.folders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 14px; }
+@media (min-width: 600px) { .folders { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.folder { display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--ink); min-width: 0; }
+.folder-cover { position: relative; height: 128px; border-radius: 18px; background: var(--tab, #ECE7DD); overflow: hidden; display: grid; place-items: center; margin-bottom: 6px; }
+/* a second "sheet" peeking out behind, so it reads as a folder of sheets */
+.folder-cover::before { content: ""; position: absolute; inset: 14px 22px 0; background: rgba(255,253,250,.55); border-radius: 8px 8px 0 0; transform: rotate(-4deg) translateY(6px); }
+.folder-cover img { position: relative; max-width: 74%; max-height: 108px; object-fit: contain; border-radius: 6px; box-shadow: 0 2px 6px rgba(48,52,44,.12); }
+.folder-name { font-size: .92rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-count { font-size: .78rem; color: var(--muted); }
+.back { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; color: var(--accent); text-decoration: none; font-weight: 500; margin: -8px 0 4px -4px; }
+.segmented { display: flex; gap: 8px; }
+.welcome { margin: 28px 0; padding: 24px 20px; background: var(--sage); border-radius: 18px; }
+.welcome h2 { margin: 0 0 6px; }
+.welcome p { margin: 0 0 18px; line-height: 1.5; }
