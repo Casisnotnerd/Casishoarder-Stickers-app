@@ -44,6 +44,6 @@ test('remove clears the picture and deletes the file', async () => {
   const { repo, photos, ids } = await setup();
   const remove = vi.spyOn(photos, 'remove');
   await removeArtistPicture({ repo, photos, artistIds: ids, oldPaths: ['thumbs/old.jpg'] });
-  for (const a of (await repo.loadAll()).artists) expect(a).toMatchObject({ avatarPath: null, avatarBytes: 0 });
+  for (const a of (await repo.loadAll()).artists) expect(a).toMatchObject({ avatarPath: null, avatarBytes: 0, avatarPosition: null });
   expect(remove).toHaveBeenCalledWith('thumbs', ['thumbs/old.jpg']);
 });

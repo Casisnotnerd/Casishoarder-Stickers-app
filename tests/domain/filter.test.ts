@@ -1,7 +1,7 @@
 import type { Artist, Order, OrderLine, Sheet, Usage } from '../../src/domain/types';
 import { EMPTY_FILTER, filterSheets, allTags } from '../../src/domain/filter';
 
-const artists: Artist[] = [{ id: 'aP', name: 'papermilio', aliases: ['paper milio'], avatarPath: null, avatarBytes: 0 }];
+const artists: Artist[] = [{ id: 'aP', name: 'papermilio', aliases: ['paper milio'], avatarPath: null, avatarBytes: 0, avatarPosition: null }];
 const mk = (id: string, title: string, tags: string[], createdAt: string): Sheet => ({
   id, artistId: 'aP', title, tags, photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt,
 });

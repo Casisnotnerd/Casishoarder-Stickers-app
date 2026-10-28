@@ -23,5 +23,5 @@ test('share link toggles on and shows a link; artists can be merged', async () =
   fireEvent.click(screen.getByText('Merge artists'));
   await screen.findByText(/Merged/);
   const s = await repo.loadAll();
-  expect(s.artists).toEqual([{ id: 'artist-1', name: 'JUIMJUIM', aliases: ['Juimsuim'], avatarPath: null, avatarBytes: 0 }]);
+  expect(s.artists).toEqual([{ id: 'artist-1', name: 'JUIMJUIM', aliases: ['Juimsuim'], avatarPath: null, avatarBytes: 0, avatarPosition: null }]);
 });

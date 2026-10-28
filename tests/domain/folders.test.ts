@@ -1,7 +1,7 @@
 import type { Artist, OrderLine, Sheet, Usage } from '../../src/domain/types';
 import { artistFolders, sheetsInFolder, UNKNOWN_FOLDER } from '../../src/domain/folders';
 
-const artist = (id: string, name: string, avatarPath: string | null = null): Artist => ({ id, name, aliases: [], avatarPath, avatarBytes: 0 });
+const artist = (id: string, name: string, avatarPath: string | null = null): Artist => ({ id, name, aliases: [], avatarPath, avatarBytes: 0, avatarPosition: null });
 const sheet = (id: string, artistId: string | null, createdAt: string): Sheet => ({
   id, artistId, title: id, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt,
 });

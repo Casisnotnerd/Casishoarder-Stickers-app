@@ -4,6 +4,7 @@ export interface Artist {
   aliases: string[];
   avatarPath: string | null;
   avatarBytes: number;
+  avatarPosition: string | null; // CSS object-position, e.g. "50% 20%"
 }
 
 export interface Sheet {

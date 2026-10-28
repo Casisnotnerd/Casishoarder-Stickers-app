@@ -84,7 +84,8 @@ export function Collection(_props: { searchMode?: boolean }) {
         {shown.map((s) => (
           <Card key={s.id} sheet={s} artist={s.artistId ? artistName.get(s.artistId) ?? '' : ''}
             copies={copiesOwned(s.id, d.lines, d.usages)}
-            avatarPath={d.artists.find((a) => a.id === s.artistId)?.avatarPath ?? null} />
+            avatarPath={d.artists.find((a) => a.id === s.artistId)?.avatarPath ?? null}
+            avatarPosition={d.artists.find((a) => a.id === s.artistId)?.avatarPosition ?? null} />
         ))}
       </div>
       {d.sheets.length === 0 && <p className="empty">Nothing to search yet. Tap + to add your first sheets.</p>}
@@ -105,7 +106,7 @@ export function Collection(_props: { searchMode?: boolean }) {
   );
 }
 
-export function Card({ sheet, artist, copies, avatarPath }: { sheet: Sheet; artist: string; copies: number; avatarPath?: string | null }) {
+export function Card({ sheet, artist, copies, avatarPath, avatarPosition }: { sheet: Sheet; artist: string; copies: number; avatarPath?: string | null; avatarPosition?: string | null }) {
   const avatarUrl = usePhotoUrl('thumbs', avatarPath ?? null);
   const thumbUrl = usePhotoUrl('thumbs', sheet.thumbPath);
   const [imgFailed, setImgFailed] = useState(false);
@@ -116,7 +117,7 @@ export function Card({ sheet, artist, copies, avatarPath }: { sheet: Sheet; arti
   return (
     <Link className={`sticker${copies > 0 ? '' : ' usedup'}`} to={`/sheet/${sheet.id}`} style={{ '--tab': c.tab } as CSSProperties}>
       <div className="mount">
-        {url ? <img src={url} alt="" loading="lazy" onError={() => setImgFailed(true)} /> : null}
+        {url ? <img src={url} alt="" loading="lazy" style={{ objectPosition: avatarPosition ?? '50% 50%' }} onError={() => setImgFailed(true)} /> : null}
         {added && <span className="badge">{added}</span>}
         <span className="copies" aria-label={label}>{copies > 0 ? `×${copies}` : 'Used up'}</span>
       </div>

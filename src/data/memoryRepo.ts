@@ -32,7 +32,7 @@ export class MemoryRepo implements Repo {
     const n = normalizeText(name);
     const existing = this.s.artists.find((a) => normalizeText(a.name) === n);
     if (existing) return clone(existing);
-    const a: Artist = { id: this.nextId('artist'), name: name.trim(), aliases: [], avatarPath: null, avatarBytes: 0 };
+    const a: Artist = { id: this.nextId('artist'), name: name.trim(), aliases: [], avatarPath: null, avatarBytes: 0, avatarPosition: null };
     this.s.artists.push(a);
     return clone(a);
   }
@@ -44,6 +44,7 @@ export class MemoryRepo implements Repo {
     if (patch.aliases !== undefined) a.aliases = patch.aliases;
     if (patch.avatarPath !== undefined) a.avatarPath = patch.avatarPath;
     if (patch.avatarBytes !== undefined) a.avatarBytes = patch.avatarBytes;
+    if (patch.avatarPosition !== undefined) a.avatarPosition = patch.avatarPosition;
   }
 
   async mergeArtists(keepId: string, mergeId: string): Promise<void> {

@@ -28,6 +28,13 @@ export function ArtistPage() {
   useEffect(() => () => { if (cropSrc) URL.revokeObjectURL(cropSrc); }, [cropSrc]);
   const folder = useMemo(() => artistFolders(d.artists, d.sheets, d.lines, d.usages).find((f) => f.id === id) ?? null,
     [id, d.artists, d.sheets, d.lines, d.usages]);
+  useEffect(() => {
+    const pos = d.artists.find((a) => folder?.artistIds.includes(a.id))?.avatarPosition;
+    if (pos) {
+      const m = pos.match(/(\d+)%\s+(\d+)%/);
+      if (m) setPosY(Number(m[2]));
+    }
+  }, [folder?.artistIds, d.artists]);
   const shown = useMemo(() => {
     if (!folder) return [];
     const mine = sheetsInFolder(folder, d.sheets, d.artists)
@@ -43,6 +50,7 @@ export function ArtistPage() {
     : [];
 
   const [picErrorMsg, setPicErrorMsg] = useState('');
+  const [posY, setPosY] = useState(50);
   const pickPicture = async (file: File | null) => {
     if (!file) return;
     const bmp = await loadImage(file);
@@ -93,6 +101,19 @@ export function ArtistPage() {
     }
   };
 
+  const savePosition = async () => {
+    if (!folder) return;
+    try {
+      for (const id of folder.artistIds) {
+        await d.repo.updateArtist(id, { avatarPosition: `50% ${posY}%` });
+      }
+      await d.reload();
+    } catch (e) {
+      setPicError(true);
+      setPicErrorMsg(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   return (
     <main className="page journal">
       <Link to="/" className="back"><ChevronLeft size={18} aria-hidden /> Collection</Link>
@@ -127,6 +148,15 @@ export function ArtistPage() {
                 </>
               )}
               {!cropImg && folder.avatarPath && <button type="button" disabled={!!picBusy} onClick={() => void removePicture()}>Remove picture</button>}
+              {!cropImg && folder.avatarPath && (
+                <label style={{ display: 'block', marginTop: 8 }}>
+                  Vertical position
+                  <input type="range" min={0} max={100} value={posY}
+                    onChange={(e) => setPosY(Number(e.target.value))}
+                    onMouseUp={() => void savePosition()}
+                    onTouchEnd={() => void savePosition()} />
+                </label>
+              )}
               {picBusy && <p className="hint">{picBusy}</p>}
               {picError && <p className="error">Couldn't save the picture. Try again.{picErrorMsg && ` (${picErrorMsg})`}</p>}
             </div>

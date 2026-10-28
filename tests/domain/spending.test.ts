@@ -2,8 +2,8 @@ import type { Artist, Order, OrderLine, Sheet } from '../../src/domain/types';
 import { monthsOfYear, noDateSgdMinor, spendingYears, summarizeSpending } from '../../src/domain/spending';
 
 const artists: Artist[] = [
-  { id: 'aJ', name: 'JUIMJUIM', aliases: [], avatarPath: null, avatarBytes: 0 },
-  { id: 'aP', name: 'papermilio', aliases: [], avatarPath: null, avatarBytes: 0 },
+  { id: 'aJ', name: 'JUIMJUIM', aliases: [], avatarPath: null, avatarBytes: 0, avatarPosition: null },
+  { id: 'aP', name: 'papermilio', aliases: [], avatarPath: null, avatarBytes: 0, avatarPosition: null },
 ];
 const sheet = (id: string, artistId: string | null): Sheet => ({
   id, artistId, title: id, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null, createdAt: '2026-01-01T00:00:00Z',

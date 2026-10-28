@@ -6,6 +6,7 @@ create table public.artists (
   aliases text[] not null default '{}',
   avatar_path text,
   avatar_bytes integer not null default 0,
+  avatar_position text,
   created_at timestamptz not null default now()
 );
 

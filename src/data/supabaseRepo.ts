@@ -13,7 +13,7 @@ function ok<T>(r: Res<T>): T {
   return r.data as T;
 }
 
-const artistFrom = (r: Row): Artist => ({ id: r.id as string, name: r.name as string, aliases: (r.aliases as string[]) ?? [], avatarPath: (r.avatar_path as string | null) ?? null, avatarBytes: Number(r.avatar_bytes ?? 0) });
+const artistFrom = (r: Row): Artist => ({ id: r.id as string, name: r.name as string, aliases: (r.aliases as string[]) ?? [], avatarPath: (r.avatar_path as string | null) ?? null, avatarBytes: Number(r.avatar_bytes ?? 0), avatarPosition: (r.avatar_position as string | null) ?? null });
 const sheetFrom = (r: Row): Sheet => ({
   id: r.id as string, artistId: (r.artist_id as string | null) ?? null, title: r.title as string,
   tags: (r.tags as string[]) ?? [], photoPath: (r.photo_path as string | null) ?? null,
@@ -85,6 +85,7 @@ export class SupabaseRepo implements Repo {
     if (patch.aliases !== undefined) row.aliases = patch.aliases;
     if (patch.avatarPath !== undefined) row.avatar_path = patch.avatarPath;
     if (patch.avatarBytes !== undefined) row.avatar_bytes = patch.avatarBytes;
+    if (patch.avatarPosition !== undefined) row.avatar_position = patch.avatarPosition;
     ok(await this.db.from('artists').update(row).eq('id', id));
   }
 

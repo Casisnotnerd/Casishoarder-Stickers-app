@@ -44,7 +44,7 @@ test('mergeArtists moves sheets and keeps the old name as alias', async () => {
   await r.createSheet(sheetInput('Egg', typo.id));
   await r.mergeArtists(keep.id, typo.id);
   const s = await r.loadAll();
-  expect(s.artists).toEqual([{ id: keep.id, name: 'JUIMJUIM', aliases: ['Juimsuim'], avatarPath: null, avatarBytes: 0 }]);
+  expect(s.artists).toEqual([{ id: keep.id, name: 'JUIMJUIM', aliases: ['Juimsuim'], avatarPath: null, avatarBytes: 0, avatarPosition: null }]);
   expect(s.sheets[0].artistId).toBe(keep.id);
 });
 

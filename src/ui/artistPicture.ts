@@ -22,6 +22,6 @@ export async function removeArtistPicture(args: {
   repo: Repo; photos: PhotoStore; artistIds: string[]; oldPaths: string[];
 }): Promise<void> {
   const { repo, photos, artistIds, oldPaths } = args;
-  for (const id of artistIds) await repo.updateArtist(id, { avatarPath: null, avatarBytes: 0 });
+  for (const id of artistIds) await repo.updateArtist(id, { avatarPath: null, avatarBytes: 0, avatarPosition: null });
   if (oldPaths.length) await photos.remove('thumbs', oldPaths).catch(() => {});
 }

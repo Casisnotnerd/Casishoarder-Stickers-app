@@ -10,7 +10,7 @@ export interface Snapshot {
 
 export type NewSheet = Omit<Sheet, 'id' | 'createdAt'>;
 export type SheetPatch = Partial<Pick<Sheet, 'artistId' | 'title' | 'tags'>>;
-export type ArtistPatch = Partial<Pick<Artist, 'name' | 'aliases' | 'avatarPath' | 'avatarBytes'>>;
+export type ArtistPatch = Partial<Pick<Artist, 'name' | 'aliases' | 'avatarPath' | 'avatarBytes' | 'avatarPosition'>>;
 export type NewOrder = Omit<Order, 'id' | 'createdAt' | 'isUnknown'>;
 export type NewLine = Omit<OrderLine, 'id'>;
 
