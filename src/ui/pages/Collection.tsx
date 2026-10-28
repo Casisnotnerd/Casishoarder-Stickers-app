@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownWideNarrow, Search } from 'lucide-react';
 import type { Sheet } from '../../domain/types';
@@ -106,14 +106,17 @@ export function Collection(_props: { searchMode?: boolean }) {
 }
 
 export function Card({ sheet, artist, copies, avatarPath }: { sheet: Sheet; artist: string; copies: number; avatarPath?: string | null }) {
-  const url = usePhotoUrl('thumbs', avatarPath ?? sheet.thumbPath);
+  const avatarUrl = usePhotoUrl('thumbs', avatarPath ?? null);
+  const thumbUrl = usePhotoUrl('thumbs', sheet.thumbPath);
+  const [imgFailed, setImgFailed] = useState(false);
+  const url = (!imgFailed && avatarUrl) ? avatarUrl : (thumbUrl ?? null);
   const c = artistColor(sheet.artistId);
   const label = copies > 0 ? `${copies} ${copies === 1 ? 'copy' : 'copies'}` : 'Used up';
   const added = addedLabel(sheet.createdAt);
   return (
     <Link className={`sticker${copies > 0 ? '' : ' usedup'}`} to={`/sheet/${sheet.id}`} style={{ '--tab': c.tab } as CSSProperties}>
       <div className="mount">
-        {url ? <img src={url} alt="" loading="lazy" /> : null}
+        {url ? <img src={url} alt="" loading="lazy" onError={() => setImgFailed(true)} /> : null}
         {added && <span className="badge">{added}</span>}
         <span className="copies" aria-label={label}>{copies > 0 ? `×${copies}` : 'Used up'}</span>
       </div>
