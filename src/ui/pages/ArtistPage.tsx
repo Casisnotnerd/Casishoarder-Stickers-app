@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { CropBox } from '../CropBox';
+import { cropToJpeg, loadImage } from '../../image/crop';
+import { fullRect, type Rect } from '../../image/geometry';
 import { ArrowDownWideNarrow, ChevronLeft } from 'lucide-react';
 import { copiesOwned } from '../../domain/holdings';
 import { SORT_LABELS, sortSheets, type SortOrder } from '../../domain/journal';
@@ -18,7 +21,11 @@ export function ArtistPage() {
   const [usedUp, setUsedUp] = useState(false);
   const [picBusy, setPicBusy] = useState<string | null>(null);
   const [picError, setPicError] = useState(false);
+  const [cropImg, setCropImg] = useState<ImageBitmap | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropRect, setCropRect] = useState<Rect | null>(null);
   useScrollMemory(`artist:${id}`);
+  useEffect(() => () => { if (cropSrc) URL.revokeObjectURL(cropSrc); }, [cropSrc]);
   const folder = useMemo(() => artistFolders(d.artists, d.sheets, d.lines, d.usages).find((f) => f.id === id) ?? null,
     [id, d.artists, d.sheets, d.lines, d.usages]);
   const shown = useMemo(() => {
@@ -36,19 +43,51 @@ export function ArtistPage() {
     : [];
 
   const [picErrorMsg, setPicErrorMsg] = useState('');
-  const picture = async (file: File | null) => {
-    if (!folder) return;
+  const pickPicture = async (file: File | null) => {
+    if (!file) return;
+    const bmp = await loadImage(file);
+    setCropImg(bmp);
+    setCropSrc(URL.createObjectURL(file));
+    setCropRect(fullRect(bmp.width, bmp.height));
+  };
+  const savePicture = async () => {
+    if (!folder || !cropImg || !cropRect) return;
     setPicError(false);
     setPicErrorMsg('');
     setPicBusy('Saving picture…');
     try {
-      if (file) await setArtistPicture({ repo: d.repo, photos: d.photos, artistIds: folder.artistIds, oldPaths, file });
-      else await removeArtistPicture({ repo: d.repo, photos: d.photos, artistIds: folder.artistIds, oldPaths });
+      const cropped = await cropToJpeg(cropImg, cropRect, 400, 0.85);
+      await setArtistPicture({ repo: d.repo, photos: d.photos, artistIds: folder.artistIds, oldPaths, file: cropped });
       await d.reload();
+      setCropImg(null);
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+      setCropSrc(null);
+      setCropRect(null);
     } catch (e) {
       setPicError(true);
       setPicErrorMsg(e instanceof Error ? e.message : String(e));
       console.error('artist picture error:', e);
+    } finally {
+      setPicBusy(null);
+    }
+  };
+  const cancelPicture = () => {
+    setCropImg(null);
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+    setCropRect(null);
+  };
+  const removePicture = async () => {
+    if (!folder) return;
+    setPicError(false);
+    setPicErrorMsg('');
+    setPicBusy('Removing picture…');
+    try {
+      await removeArtistPicture({ repo: d.repo, photos: d.photos, artistIds: folder.artistIds, oldPaths });
+      await d.reload();
+    } catch (e) {
+      setPicError(true);
+      setPicErrorMsg(e instanceof Error ? e.message : String(e));
     } finally {
       setPicBusy(null);
     }
@@ -72,11 +111,22 @@ export function ArtistPage() {
           </header>
           {canPicture && (
             <div className="pic-actions">
-              <label className="button-like">Change picture
-                <input type="file" accept="image/*" style={{ display: 'none' }} disabled={!!picBusy}
-                  onChange={(e) => { const f = e.target.files?.[0] ?? null; e.target.value = ''; if (f) void picture(f); }} />
-              </label>
-              {folder.avatarPath && <button type="button" disabled={!!picBusy} onClick={() => void picture(null)}>Remove picture</button>}
+              {!cropImg && (
+                <label className="button-like">Change picture
+                  <input type="file" accept="image/*" style={{ display: 'none' }} disabled={!!picBusy}
+                    onChange={(e) => { const f = e.target.files?.[0] ?? null; e.target.value = ''; if (f) void pickPicture(f); }} />
+                </label>
+              )}
+              {cropImg && cropSrc && cropRect && (
+                <>
+                  <CropBox src={cropSrc} naturalW={cropImg.width} naturalH={cropImg.height} value={cropRect} onChange={setCropRect} />
+                  <div className="row">
+                    <button type="button" disabled={!!picBusy} onClick={() => void savePicture()}>Save picture</button>
+                    <button type="button" disabled={!!picBusy} onClick={cancelPicture}>Cancel</button>
+                  </div>
+                </>
+              )}
+              {!cropImg && folder.avatarPath && <button type="button" disabled={!!picBusy} onClick={() => void removePicture()}>Remove picture</button>}
               {picBusy && <p className="hint">{picBusy}</p>}
               {picError && <p className="error">Couldn't save the picture. Try again.{picErrorMsg && ` (${picErrorMsg})`}</p>}
             </div>
