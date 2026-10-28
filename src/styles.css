@@ -193,8 +193,34 @@ th { color: var(--muted); font-weight: 500; font-size: .78rem; }
 .folder-cover img { position: relative; max-width: 74%; max-height: 108px; object-fit: contain; border-radius: 6px; box-shadow: 0 2px 6px rgba(48,52,44,.12); }
 .folder-name { font-size: .92rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .folder-count { font-size: .78rem; color: var(--muted); }
+button.back { background: none; border: 0; padding: 0 8px 0 4px; font-size: 1rem; }
 .back { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; color: var(--accent); text-decoration: none; font-weight: 500; margin: -8px 0 4px -4px; }
 .segmented { display: flex; gap: 8px; }
 .welcome { margin: 28px 0; padding: 24px 20px; background: var(--sage); border-radius: 18px; }
 .welcome h2 { margin: 0 0 6px; }
 .welcome p { margin: 0 0 18px; line-height: 1.5; }
+
+/* Artist picture (brand picture) */
+.folder-cover.has-picture::before { display: none; }
+.folder-cover.has-picture img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: cover; border-radius: 0; box-shadow: none; }
+.artist-head { justify-content: flex-start; gap: 14px; }
+.artist-pic { flex: none; width: 64px; height: 64px; border-radius: 16px; overflow: hidden; background: var(--tab, #ECE7DD); }
+.artist-pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pic-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; margin: 12px 0 0; }
+.pic-actions p { flex-basis: 100%; margin: 4px 0 0; }
+.button-like { display: inline-flex; align-items: center; min-height: 46px; padding: 0 18px; margin: 4px 6px 4px 0; border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: .95rem; font-weight: 500; cursor: pointer; }
+
+/* Spending: year switcher and month tiles */
+.year-switch { display: flex; align-items: center; gap: 4px; margin: 20px 0 4px; flex-wrap: wrap; }
+.year-switch button { min-height: 44px; min-width: 44px; padding: 0; margin: 0; display: grid; place-items: center; border-radius: 999px; }
+.year-gap { width: 44px; }
+.year { font-size: 1.3rem; font-weight: 600; min-width: 56px; text-align: center; font-variant-numeric: tabular-nums; }
+.year-total { margin-left: auto; color: var(--muted); font-size: .9rem; }
+.months { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.month-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; padding: 6px 2px;
+  border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--card); color: var(--ink); text-decoration: none; }
+.month-tile.current { background: var(--accent-soft); border-color: transparent; }
+.month-tile.empty { opacity: .45; }
+.month-name { font-size: .78rem; color: var(--muted); }
+.month-amt { font-size: .85rem; font-weight: 600; font-variant-numeric: tabular-nums; }

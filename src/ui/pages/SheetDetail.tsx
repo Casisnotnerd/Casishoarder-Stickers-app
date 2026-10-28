@@ -5,6 +5,7 @@ import { copiesOwned, copiesBought } from '../../domain/holdings';
 import { formatMoney } from '../../domain/currency';
 import { findArtistByName } from '../../domain/duplicates';
 import { linesOf, lineSgdMinor, unitSgdMinor } from '../../domain/money';
+import { BackButton } from '../BackButton';
 import { useData } from '../DataProvider';
 import { usePhotoUrl } from '../usePhotoUrl';
 
@@ -24,7 +25,7 @@ export function SheetDetail() {
   const [copies, setCopies] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
 
-  if (!sheet) return <main className="page"><p>Sheet not found.</p></main>;
+  if (!sheet) return <main className="page"><BackButton fallback="/" /><p>Sheet not found.</p></main>;
   const artistName = d.artists.find((a) => a.id === sheet.artistId)?.name ?? '';
   const owned = copiesOwned(sheet.id, d.lines, d.usages);
   const myLines = d.lines.filter((l) => l.sheetId === sheet.id);
@@ -84,6 +85,7 @@ export function SheetDetail() {
 
   return (
     <main className="page" style={{ '--tab': artistColor(sheet.artistId).tab } as CSSProperties}>
+      <BackButton fallback="/" />
       {photoUrl ? <img className="detail-photo" src={photoUrl} alt={sheet.title} /> : null}
       {editing ? (
         <div className="card">

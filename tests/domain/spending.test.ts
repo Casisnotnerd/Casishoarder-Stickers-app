@@ -1,5 +1,5 @@
 import type { Artist, Order, OrderLine, Sheet } from '../../src/domain/types';
-import { summarizeSpending } from '../../src/domain/spending';
+import { monthsOfYear, noDateSgdMinor, spendingYears, summarizeSpending } from '../../src/domain/spending';
 
 const artists: Artist[] = [
   { id: 'aJ', name: 'JUIMJUIM', aliases: [], avatarPath: null, avatarBytes: 0 },
@@ -51,4 +51,27 @@ test('discount shows up as negative "other"', () => {
   // base 14000: egg 3×3000→1003, dumpling →334, shipping →334; parts 1671; paid 1560; other −111
   expect(s.otherMinor).toBe(-111);
   expect(s.totalMinor).toBe(2460);
+});
+
+test('period filters to a month or a year by order date', () => {
+  const d = { artists, sheets, orders, lines };
+  expect(summarizeSpending(d, null, '2026-10').totalMinor).toBe(1560);
+  expect(summarizeSpending(d, null, '2026-09').totalMinor).toBe(0);
+  expect(summarizeSpending(d, null, '2026').totalMinor).toBe(1560);
+  expect(summarizeSpending(d, null, '2025').totalMinor).toBe(0);
+  expect(summarizeSpending(d, null, '2026-10').byArtist).toEqual([{ label: 'JUIMJUIM', minor: 1248 }]);
+});
+
+test('years run from the earliest dated order to this year', () => {
+  const o: Order[] = [{ ...base, id: 'a', orderDate: '2024-03-01' }, { ...base, id: 'b', orderDate: null }];
+  expect(spendingYears(o, new Date('2026-10-28'))).toEqual([2024, 2025, 2026]);
+  expect(spendingYears([], new Date('2026-10-28'))).toEqual([2026]);
+});
+
+test('monthsOfYear and noDateSgdMinor', () => {
+  expect(monthsOfYear(2025)[0]).toBe('2025-01');
+  expect(monthsOfYear(2025)[11]).toBe('2025-12');
+  expect(monthsOfYear(2025)).toHaveLength(12);
+  // 'sgdEst' has no date, SGD, 2 × 450 → 900; the per-user Unknown order is not counted
+  expect(noDateSgdMinor({ artists, sheets, orders, lines })).toBe(900);
 });

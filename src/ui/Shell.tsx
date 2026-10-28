@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { ChartColumn, Layers, Plus, Search, Settings as SettingsIcon } from 'lucide-react';
 import { useData } from './DataProvider';
+import { ScrollToTopOnNewPage, SearchStateProvider } from './SearchState';
 import { Collection } from './pages/Collection';
 import { Home } from './pages/Home';
 import { ArtistPage } from './pages/ArtistPage';
@@ -9,6 +10,7 @@ import { BulkAdd } from './pages/BulkAdd';
 import { AddChoice } from './pages/AddChoice';
 import { SheetDetail } from './pages/SheetDetail';
 import { Spending } from './pages/Spending';
+import { SpendingMonth } from './pages/SpendingMonth';
 import { Orders } from './pages/Orders';
 import { Settings } from './pages/Settings';
 
@@ -24,6 +26,8 @@ export function Shell({ demo, onSignOut }: { demo: boolean; onSignOut?: () => vo
       {loading ? (
         <p className="page">Loading…</p>
       ) : (
+        <SearchStateProvider>
+        <ScrollToTopOnNewPage />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/artist/:id" element={<ArtistPage />} />
@@ -34,10 +38,12 @@ export function Shell({ demo, onSignOut }: { demo: boolean; onSignOut?: () => vo
           <Route path="/bulk" element={<BulkRedirect />} />
           <Route path="/sheet/:id" element={<SheetDetail />} />
           <Route path="/spending" element={<Spending />} />
+          <Route path="/spending/:month" element={<SpendingMonth />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/settings" element={<Settings onSignOut={onSignOut} />} />
           <Route path="*" element={<Home />} />
         </Routes>
+        </SearchStateProvider>
       )}
       <nav className="tabs" aria-label="Main">
         <NavLink to="/" className={({ isActive }) => (isActive || loc.pathname.startsWith('/artist/') ? 'active' : '')} end><Layers {...ICON} />Collection</NavLink>

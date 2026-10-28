@@ -1,8 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { MemoryPhotoStore, MemoryRepo } from '../../src/data/memoryRepo';
 import { DataProvider } from '../../src/ui/DataProvider';
 import { Collection } from '../../src/ui/pages/Collection';
+import { SearchStateProvider } from '../../src/ui/SearchState';
 import { Home } from '../../src/ui/pages/Home';
 import { ArtistPage } from '../../src/ui/pages/ArtistPage';
 
@@ -22,7 +23,7 @@ test('shows owned sheets with copy count; used-up hidden until toggled', async (
   render(
     <MemoryRouter>
       <DataProvider repo={await seed()} photos={new MemoryPhotoStore()}>
-        <Collection />
+        <SearchStateProvider><Collection /></SearchStateProvider>
       </DataProvider>
     </MemoryRouter>,
   );
@@ -44,7 +45,7 @@ test('search and tag dropdown sit above the list and the tag dropdown filters', 
   const { container } = render(
     <MemoryRouter>
       <DataProvider repo={r} photos={new MemoryPhotoStore()}>
-        <Collection />
+        <SearchStateProvider><Collection /></SearchStateProvider>
       </DataProvider>
     </MemoryRouter>,
   );
@@ -64,7 +65,7 @@ test('tag dropdown is shown even before any tags exist', async () => {
   render(
     <MemoryRouter>
       <DataProvider repo={new MemoryRepo()} photos={new MemoryPhotoStore()}>
-        <Collection />
+        <SearchStateProvider><Collection /></SearchStateProvider>
       </DataProvider>
     </MemoryRouter>,
   );
@@ -135,7 +136,7 @@ test('search is never limited to 10', async () => {
   render(
     <MemoryRouter>
       <DataProvider repo={r} photos={new MemoryPhotoStore()}>
-        <Collection />
+        <SearchStateProvider><Collection /></SearchStateProvider>
       </DataProvider>
     </MemoryRouter>,
   );
@@ -143,4 +144,68 @@ test('search is never limited to 10', async () => {
   fireEvent.change(screen.getByPlaceholderText('Find a sticker, artist or tag'), { target: { value: 'bear' } });
   expect(screen.getByText('Bear 1')).toBeTruthy();
   expect(screen.getByText('12 little finds')).toBeTruthy();
+});
+
+async function folderRepo(withPicture: boolean) {
+  const r = new MemoryRepo();
+  const photos = new MemoryPhotoStore();
+  const o = await r.getOrCreateUnknownOrder();
+  const p = await r.createArtist('papermilio');
+  if (withPicture) {
+    const up = await photos.upload('thumbs', new Blob(['logo']));
+    await r.updateArtist(p.id, { avatarPath: up.path, avatarBytes: up.bytes });
+  }
+  for (const [title, artistId] of [['Winter', p.id], ['Egg', null]] as const) {
+    const s = await r.createSheet({ artistId, title, tags: [], photoPath: null, thumbPath: null, photoBytes: 0, imageHash: null });
+    await r.addLine({ orderId: o.id, sheetId: s.id, quantity: 1, priceMinor: null, estimated: false });
+  }
+  return { r, photos, p };
+}
+
+function artistRoute(r: MemoryRepo, photos: MemoryPhotoStore, path: string) {
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <DataProvider repo={r} photos={photos}>
+        <Routes><Route path="/artist/:id" element={<ArtistPage />} /></Routes>
+      </DataProvider>
+    </MemoryRouter>,
+  );
+}
+
+test('artist page offers Change picture; Remove picture only once one is set', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:x');
+  const plain = await folderRepo(false);
+  artistRoute(plain.r, plain.photos, `/artist/${plain.p.id}`);
+  expect(await screen.findByText('Change picture')).toBeTruthy();
+  expect(screen.queryByText('Remove picture')).toBeNull();
+  cleanup();
+  const pic = await folderRepo(true);
+  artistRoute(pic.r, pic.photos, `/artist/${pic.p.id}`);
+  expect(await screen.findByText('Remove picture')).toBeTruthy();
+});
+
+test('the Unknown artist folder has no picture controls', async () => {
+  const { r, photos } = await folderRepo(false);
+  artistRoute(r, photos, '/artist/unknown');
+  expect(await screen.findByText('Egg')).toBeTruthy();
+  expect(screen.queryByText('Change picture')).toBeNull();
+});
+
+test('a folder with a picture fills the tile', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:x');
+  const { r, photos } = await folderRepo(true);
+  render(
+    <MemoryRouter>
+      <DataProvider repo={r} photos={photos}><Home /></DataProvider>
+    </MemoryRouter>,
+  );
+  await screen.findAllByText('papermilio');
+  await waitFor(() => expect(document.querySelector('.folder-cover.has-picture img')).not.toBeNull());
+});
+
+test('the picture file chooser is hidden behind the Change picture button', async () => {
+  const { r, photos, p } = await folderRepo(false);
+  artistRoute(r, photos, `/artist/${p.id}`);
+  const input = (await screen.findByText('Change picture')).querySelector('input[type=file]') as HTMLInputElement;
+  expect(input.style.display).toBe('none');
 });

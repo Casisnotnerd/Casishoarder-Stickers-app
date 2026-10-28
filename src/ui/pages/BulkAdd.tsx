@@ -9,6 +9,7 @@ import { findArtistByName, findSameTitle } from '../../domain/duplicates';
 import { copiesOwned } from '../../domain/holdings';
 import { formatMoney } from '../../domain/currency';
 import { effectiveSgdPaidMinor, linesOf } from '../../domain/money';
+import { BackButton } from '../BackButton';
 import { useData } from '../DataProvider';
 import { BoxEditor } from '../BoxEditor';
 import { saveBatch, type BatchOrderInfo, type BatchRow } from '../saveBatch';
@@ -62,7 +63,7 @@ export function BulkAdd() {
   }, [order, data.lines]);
 
   if (continuing && !existingOrder && !data.loading) {
-    return <main className="page"><h1>Add many sheets</h1><p className="error">That order wasn't found.</p><Link to="/orders">Back to orders</Link></main>;
+    return <main className="page"><BackButton fallback="/add" /><h1>Add many sheets</h1><p className="error">That order wasn't found.</p><Link to="/orders">Back to orders</Link></main>;
   }
 
   const pick = async (file: File | undefined) => {
@@ -172,11 +173,13 @@ export function BulkAdd() {
     }
   };
 
+  const unsaved = img !== null || step === 'details' || step === 'titles';
   const steps: Step[] = ['photo', 'details', 'titles'];
   const stepNo = steps.indexOf(step) + 1;
 
   return (
     <main className="page bulk">
+      <BackButton fallback="/add" confirmLeave={unsaved ? "Leave without saving this photo's sheets? Photos you already saved stay saved." : null} />
       <h1>Add many sheets</h1>
       {order && orderSummary && (
         <p className="sub">Order: {order.orderDate ?? 'no date'} · {order.shop ?? 'no shop'} · {orderSummary.sheets} sheet{orderSummary.sheets === 1 ? '' : 's'} so far</p>
@@ -233,7 +236,7 @@ export function BulkAdd() {
           <label>Tags (comma-separated, optional)<input value={tags} onChange={(e) => setTags(e.target.value)} /></label>
           <label><input type="checkbox" checked={suggest} onChange={(e) => setSuggest(e.target.checked)} />Suggest titles from the photo</label>
           <p className="hint">Each sheet starts with 1 copy. If one sheet has a different artist or price, you can change just that sheet on the next screen.</p>
-          <button onClick={() => setStep('photo')}>Back</button>
+          <button onClick={() => setStep('photo')}>Previous step</button>
           <button className="primary" disabled={!!busy} onClick={() => void cutOut()}>Next</button>
         </section>
       )}
@@ -252,7 +255,7 @@ export function BulkAdd() {
               onRemove={() => setRows((cur) => cur.filter((x) => x.key !== r.key))} />
           ))}
           {rows.length === 0 && <p className="hint">No sheets left. Go back to add a box.</p>}
-          <button onClick={() => { stopOcr.current = true; setStep('details'); }}>Back</button>
+          <button onClick={() => { stopOcr.current = true; setStep('details'); }}>Previous step</button>
           <button className="primary" disabled={!!busy || rows.length === 0} onClick={() => void save()}>
             Save {rows.length} sheet{rows.length === 1 ? '' : 's'}
           </button>

@@ -1,48 +1,36 @@
-import { useMemo, useState, type CSSProperties } from 'react';
-import { Link } from 'react-router-dom';
-import { summarizeSpending, type Bucket } from '../../domain/spending';
+import { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { monthsOfYear, noDateSgdMinor, spendingYears, summarizeSpending } from '../../domain/spending';
 import { formatMoney } from '../../domain/currency';
 import { collectionCsv } from '../../domain/csv';
 import { artistColor } from '../../domain/artistColor';
 import { useData } from '../DataProvider';
 import { downloadText } from '../download';
+import { Bars } from '../Bars';
 
-function Bars({ items, colorOf }: { items: Bucket[]; colorOf?: (label: string) => string | undefined }) {
-  const max = Math.max(1, ...items.map((b) => Math.abs(b.minor)));
-  return (
-    <div className="bars">
-      {items.map((b) => (
-        <div className="barrow" key={b.label}>
-          <span>{b.label}</span>
-          <span className="amt">{formatMoney(b.minor, 'SGD')}</span>
-          <div className="track">
-            <div className="fill" style={{ width: `${(Math.abs(b.minor) / max) * 100}%`, '--tab': colorOf?.(b.label) } as CSSProperties} />
-          </div>
-        </div>
-      ))}
-      {items.length === 0 && <p className="hint">Nothing to show yet.</p>}
-    </div>
-  );
-}
-
-function last12Months(): string[] {
-  const out: string[] = [];
-  const now = new Date();
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-  }
-  return out;
-}
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthShort = (m: string) => MONTH_SHORT[Number(m.slice(5, 7)) - 1];
 
 export function Spending() {
   const d = useData();
   const [filterArtistId, setFilterArtistId] = useState<string | null>(null);
   const s = useMemo(() => summarizeSpending(d, filterArtistId), [d, filterArtistId]);
-  const idByName = useMemo(() => new Map(d.artists.map((a) => [a.id, a.name])), [d.artists]);
+  const idByName = useMemo(() => new Map(d.artists.map((a) => [a.name, a.id])), [d.artists]);
 
-  const monthMap = useMemo(() => new Map(s.byMonth.map((b) => [b.label, b.minor])), [s.byMonth]);
-  const months12 = useMemo(() => last12Months(), []);
+  const [params, setParams] = useSearchParams();
+  const years = useMemo(() => spendingYears(d.orders), [d.orders]);
+  const asked = Number(params.get('year'));
+  const year = years.includes(asked) ? asked : years[years.length - 1];
+  const yearTotal = useMemo(() => summarizeSpending(d, filterArtistId, String(year)).totalMinor, [d, filterArtistId, year]);
+  const months = useMemo(
+    () => monthsOfYear(year).map((m) => ({ m, minor: summarizeSpending(d, filterArtistId, m).totalMinor })),
+    [d, filterArtistId, year],
+  );
+  const noDate = useMemo(() => noDateSgdMinor(d), [d]);
+  const now = new Date();
+  const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const goYear = (y: number) => setParams({ year: String(y) }, { replace: true });
   const missing = s.missingSgdOrderIds.length;
   return (
     <main className="page">
@@ -73,20 +61,25 @@ export function Spending() {
           <Link to="/orders?missing=1">Fill in</Link></p>
       )}
 
-      <h2>Last 12 months</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 16 }}>
-        {months12.map((m) => {
-          const amt = monthMap.get(m) ?? 0;
-          const now = new Date();
-          const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-          return (
-            <div key={m} className="card" style={{ padding: 6, textAlign: 'center', background: m === cur ? 'var(--accent-soft)' : undefined }}>
-              <div className="hint" style={{ fontSize: '0.75rem' }}>{m.slice(5)}</div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{formatMoney(amt, 'SGD')}</div>
-            </div>
-          );
+      <div className="year-switch">
+        {year > years[0] ? <button type="button" aria-label="Previous year" onClick={() => goYear(year - 1)}><ChevronLeft size={20} aria-hidden /></button> : <span className="year-gap" />}
+        <span className="year">{year}</span>
+        {year < years[years.length - 1] ? <button type="button" aria-label="Next year" onClick={() => goYear(year + 1)}><ChevronRight size={20} aria-hidden /></button> : <span className="year-gap" />}
+        <span className="year-total">{formatMoney(yearTotal, 'SGD')} this year</span>
+      </div>
+      <h2>Months</h2>
+      <div className="months">
+        {months.map(({ m, minor }) => {
+          const body = <><span className="month-name">{monthShort(m)}</span><span className="month-amt">{formatMoney(minor, 'SGD')}</span></>;
+          const cls = `month-tile${m === cur ? ' current' : ''}`;
+          return minor > 0
+            ? <Link key={m} to={`/spending/${m}`} className={cls}>{body}</Link>
+            : <div key={m} className={`${cls} empty`} aria-disabled="true">{body}</div>;
         })}
       </div>
+      {noDate > 0 && (
+        <p className="hint">No date: {formatMoney(noDate, 'SGD')} · <Link to="/orders">See orders</Link></p>
+      )}
 
       {filterArtistId === null && (
         <>
@@ -97,8 +90,6 @@ export function Spending() {
           }} />
         </>
       )}
-      <h2>By month</h2>
-      <Bars items={s.byMonth} />
       <p style={{ marginTop: 24 }}>
         <Link to="/orders">All orders</Link>{' · '}
         <button onClick={() => downloadText('sticker-collection.csv', collectionCsv(d))}>Export CSV</button>

@@ -4,6 +4,7 @@ import type { Order } from '../../domain/types';
 import { formatMoney } from '../../domain/currency';
 import { effectiveSgdPaidMinor, linesOf } from '../../domain/money';
 import { orderToForm, parseOrderForm, type OrderForm } from '../../domain/orderForm';
+import { BackButton } from '../BackButton';
 import { useData } from '../DataProvider';
 import { OrderFields } from '../OrderFields';
 
@@ -32,6 +33,7 @@ export function Orders() {
 
   return (
     <main className="page">
+      <BackButton fallback="/spending" />
       <h1>Orders</h1>
       <label><input type="checkbox" checked={onlyMissing} onChange={(e) => setOnlyMissing(e.target.checked)} />Only orders missing SGD</label>
       {rows.map((o) => {

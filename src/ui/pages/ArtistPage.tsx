@@ -3,8 +3,11 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowDownWideNarrow, ChevronLeft } from 'lucide-react';
 import { copiesOwned } from '../../domain/holdings';
 import { SORT_LABELS, sortSheets, type SortOrder } from '../../domain/journal';
-import { artistFolders, sheetsInFolder } from '../../domain/folders';
+import { artistFolders, sheetsInFolder, UNKNOWN_FOLDER } from '../../domain/folders';
 import { useData } from '../DataProvider';
+import { useScrollMemory } from '../SearchState';
+import { usePhotoUrl } from '../usePhotoUrl';
+import { removeArtistPicture, setArtistPicture } from '../artistPicture';
 import { Card } from './Collection';
 
 /** One artist's folder: every sheet by them, owned or used up. */
@@ -13,6 +16,9 @@ export function ArtistPage() {
   const d = useData();
   const [order, setOrder] = useState<SortOrder>('newest');
   const [usedUp, setUsedUp] = useState(false);
+  const [picBusy, setPicBusy] = useState<string | null>(null);
+  const [picError, setPicError] = useState(false);
+  useScrollMemory(`artist:${id}`);
   const folder = useMemo(() => artistFolders(d.artists, d.sheets, d.lines, d.usages).find((f) => f.id === id) ?? null,
     [id, d.artists, d.sheets, d.lines, d.usages]);
   const shown = useMemo(() => {
@@ -22,6 +28,28 @@ export function ArtistPage() {
     return sortSheets(mine, order, d.lines, d.usages);
   }, [folder, d.sheets, d.artists, d.lines, d.usages, usedUp, order]);
 
+  const avatarUrl = usePhotoUrl('thumbs', folder?.avatarPath ?? null);
+  const coverUrl = usePhotoUrl('thumbs', folder?.cover?.thumbPath ?? null);
+  const canPicture = !!folder && folder.id !== UNKNOWN_FOLDER;
+  const oldPaths = folder
+    ? [...new Set(d.artists.filter((a) => folder.artistIds.includes(a.id)).map((a) => a.avatarPath).filter((p): p is string => !!p))]
+    : [];
+
+  const picture = async (file: File | null) => {
+    if (!folder) return;
+    setPicError(false);
+    setPicBusy('Saving picture…');
+    try {
+      if (file) await setArtistPicture({ repo: d.repo, photos: d.photos, artistIds: folder.artistIds, oldPaths, file });
+      else await removeArtistPicture({ repo: d.repo, photos: d.photos, artistIds: folder.artistIds, oldPaths });
+      await d.reload();
+    } catch {
+      setPicError(true);
+    } finally {
+      setPicBusy(null);
+    }
+  };
+
   return (
     <main className="page journal">
       <Link to="/" className="back"><ChevronLeft size={18} aria-hidden /> Collection</Link>
@@ -29,12 +57,26 @@ export function ArtistPage() {
         <p className="empty">This artist has no sheets.</p>
       ) : (
         <>
-          <header className="journal-head">
+          <header className="journal-head artist-head">
+            {canPicture && (
+              <div className="artist-pic">{(avatarUrl || coverUrl) ? <img src={(avatarUrl || coverUrl)!} alt="" /> : null}</div>
+            )}
             <div>
               <h1>{folder.name}</h1>
               <p className="sub">{folder.owned} {folder.owned === 1 ? 'sheet' : 'sheets'} owned{folder.usedUp > 0 ? ` · ${folder.usedUp} used up` : ''}</p>
             </div>
           </header>
+          {canPicture && (
+            <div className="pic-actions">
+              <label className="button-like">Change picture
+                <input type="file" accept="image/*" style={{ display: 'none' }} disabled={!!picBusy}
+                  onChange={(e) => { const f = e.target.files?.[0] ?? null; e.target.value = ''; if (f) void picture(f); }} />
+              </label>
+              {folder.avatarPath && <button type="button" disabled={!!picBusy} onClick={() => void picture(null)}>Remove picture</button>}
+              {picBusy && <p className="hint">{picBusy}</p>}
+              {picError && <p className="error">Couldn't save the picture. Try again.</p>}
+            </div>
+          )}
           <div className="section-head">
             <div className="segmented" role="group" aria-label="Show">
               <button className="tab" aria-pressed={!usedUp} onClick={() => setUsedUp(false)}>Owned</button>

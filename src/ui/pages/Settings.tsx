@@ -5,6 +5,7 @@ import { normalizeText } from '../../domain/text';
 import { useData } from '../DataProvider';
 import { usePhotoUrl } from '../usePhotoUrl';
 import { downloadText } from '../download';
+import { setArtistPicture } from '../artistPicture';
 
 const FREE_STORAGE_BYTES = 1024 ** 3; // Supabase free plan: 1 GB file storage
 
@@ -82,9 +83,12 @@ export function Settings({ onSignOut }: { onSignOut?: () => void }) {
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-                  const up = await d.photos.upload('thumbs', file);
-                  await d.repo.updateArtist(a.id, { avatarPath: up.path, avatarBytes: up.bytes });
-                  await d.reload();
+                  try {
+                    await setArtistPicture({ repo: d.repo, photos: d.photos, artistIds: [a.id], oldPaths: a.avatarPath ? [a.avatarPath] : [], file });
+                    await d.reload();
+                  } catch {
+                    setMsg("Couldn't save the picture. Try again.");
+                  }
                 }} />
             </label>
           ))}

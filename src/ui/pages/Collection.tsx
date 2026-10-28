@@ -1,22 +1,25 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownWideNarrow, Search } from 'lucide-react';
 import type { Sheet } from '../../domain/types';
-import { EMPTY_FILTER, allTags, filterSheets, type SheetFilter } from '../../domain/filter';
+import { allTags, filterSheets, type SheetFilter } from '../../domain/filter';
 import { copiesOwned } from '../../domain/holdings';
 import { toMinor } from '../../domain/currency';
 import { artistColor } from '../../domain/artistColor';
 import { addedLabel, SORT_LABELS, sortSheets, type SortOrder } from '../../domain/journal';
 import { useData } from '../DataProvider';
+import { useScrollMemory, useSearchState } from '../SearchState';
 import { usePhotoUrl } from '../usePhotoUrl';
 
 /** Search tab: the one place to search and filter every sheet. */
 export function Collection(_props: { searchMode?: boolean }) {
   const d = useData();
-  const [f, setF] = useState<SheetFilter>(EMPTY_FILTER);
-  const [order, setOrder] = useState<SortOrder>('newest');
-  const [minS, setMinS] = useState('');
-  const [maxS, setMaxS] = useState('');
+  const [{ filter: f, order, minS, maxS }, update] = useSearchState();
+  const setF = (filter: SheetFilter) => update({ filter });
+  const setOrder = (o: SortOrder) => update({ order: o });
+  const setMinS = (v: string) => update({ minS: v });
+  const setMaxS = (v: string) => update({ maxS: v });
+  useScrollMemory('search');
   const filtered = useMemo(() => filterSheets(f, d), [f, d]);
   const shown = useMemo(() => sortSheets(filtered, order, d.lines, d.usages), [filtered, order, d.lines, d.usages]);
   const tags = useMemo(() => allTags(d.sheets), [d.sheets]);
@@ -40,7 +43,7 @@ export function Collection(_props: { searchMode?: boolean }) {
       <label className="searchbox">
         <Search size={18} aria-hidden="true" />
         <input type="search" aria-label="Search" placeholder="Find a sticker, artist or tag" value={f.text}
-          autoFocus
+          autoFocus={!f.text}
           onChange={(e) => setF({ ...f, text: e.target.value })} />
       </label>
 

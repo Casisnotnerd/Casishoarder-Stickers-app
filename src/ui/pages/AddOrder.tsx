@@ -4,6 +4,7 @@ import { EMPTY_ORDER_FORM, parseOrderForm, type OrderForm } from '../../domain/o
 import { derivedRate, orderMismatch } from '../../domain/money';
 import { formatMoney, toMinor } from '../../domain/currency';
 import type { Order, OrderLine } from '../../domain/types';
+import { BackButton } from '../BackButton';
 import { useData } from '../DataProvider';
 import { OrderFields } from '../OrderFields';
 import { SheetDraftEditor } from '../SheetDraftEditor';
@@ -48,6 +49,7 @@ export function AddOrder() {
 
   return (
     <main className="page">
+      <BackButton fallback="/add" confirmLeave={drafts.length > 0 || editing ? 'Leave without saving these sheets?' : null} />
       <h1>Add sheets</h1>
       <label>
         <input type="checkbox" checked={unknownOrder} onChange={(e) => setUnknown(e.target.checked)} />

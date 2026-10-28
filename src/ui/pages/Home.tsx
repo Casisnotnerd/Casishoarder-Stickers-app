@@ -86,7 +86,7 @@ function Folder({ folder }: { folder: ArtistFolder }) {
   const img = avatar || cover;
   return (
     <Link to={`/artist/${folder.id}`} className="folder" style={{ '--tab': c.tab } as CSSProperties}>
-      <div className="folder-cover">{img ? <img src={img} alt="" loading="lazy" /> : null}</div>
+      <div className={`folder-cover${avatar ? ' has-picture' : ''}`}>{img ? <img src={img} alt="" loading="lazy" /> : null}</div>
       <div className="folder-name">{folder.name}</div>
       <div className="folder-count">
         {folder.owned} {folder.owned === 1 ? 'sheet' : 'sheets'}{folder.usedUp > 0 ? ` · ${folder.usedUp} used up` : ''}
