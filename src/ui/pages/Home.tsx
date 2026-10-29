@@ -1,6 +1,6 @@
 import { useMemo, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronRight, Pencil, Sparkles } from 'lucide-react';
 import { copiesOwned } from '../../domain/holdings';
 import { artistColor } from '../../domain/artistColor';
 import { addedThisMonth, sortSheets } from '../../domain/journal';
@@ -8,6 +8,7 @@ import { artistFolders, UNKNOWN_FOLDER, type ArtistFolder } from '../../domain/f
 import { useData } from '../DataProvider';
 import { usePhotoUrl } from '../usePhotoUrl';
 import { Card } from './Collection';
+import { FramedPicture } from '../FramedPicture';
 
 export const LATEST_LIMIT = 10;
 
@@ -82,15 +83,26 @@ export function Home() {
 function Folder({ folder }: { folder: ArtistFolder }) {
   const avatar = usePhotoUrl('thumbs', folder.avatarPath);
   const cover = usePhotoUrl('thumbs', folder.cover?.thumbPath ?? null);
-  const c = artistColor(folder.id === UNKNOWN_FOLDER ? null : folder.id);
-  const img = avatar || cover;
+  const unknown = folder.id === UNKNOWN_FOLDER;
+  const c = artistColor(unknown ? null : folder.id);
   return (
-    <Link to={`/artist/${folder.id}`} className="folder" style={{ '--tab': c.tab } as CSSProperties}>
-      <div className={`folder-cover${avatar ? ' has-picture' : ''}`}>{img ? <img src={img} alt="" loading="lazy" /> : null}</div>
-      <div className="folder-name">{folder.name}</div>
-      <div className="folder-count">
-        {folder.owned} {folder.owned === 1 ? 'sheet' : 'sheets'}{folder.usedUp > 0 ? ` · ${folder.usedUp} used up` : ''}
-      </div>
-    </Link>
+    <div className="folder" style={{ '--tab': c.tab } as CSSProperties}>
+      <Link to={`/artist/${folder.id}`} className="folder-link">
+        <div className={`folder-cover${avatar ? ' has-picture' : ''}`}>
+          {avatar
+            ? <FramedPicture src={avatar} frame={folder.avatarPosition} />
+            : cover ? <img src={cover} alt="" loading="lazy" /> : null}
+        </div>
+        <div className="folder-name">{folder.name}</div>
+        <div className="folder-count">
+          {folder.owned} {folder.owned === 1 ? 'sheet' : 'sheets'}{folder.usedUp > 0 ? ` · ${folder.usedUp} used up` : ''}
+        </div>
+      </Link>
+      {!unknown && (
+        <Link to={`/artist/${folder.id}/picture`} className="tile-edit" aria-label={`Change picture for ${folder.name}`}>
+          <Pencil size={16} aria-hidden />
+        </Link>
+      )}
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { MemoryPhotoStore, MemoryRepo } from '../../src/data/memoryRepo';
-import { removeArtistPicture, setArtistPicture } from '../../src/ui/artistPicture';
+import { removeArtistPicture, setArtistFrame, setArtistPicture } from '../../src/ui/artistPicture';
 
 beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:x');
@@ -46,4 +46,26 @@ test('remove clears the picture and deletes the file', async () => {
   await removeArtistPicture({ repo, photos, artistIds: ids, oldPaths: ['thumbs/old.jpg'] });
   for (const a of (await repo.loadAll()).artists) expect(a).toMatchObject({ avatarPath: null, avatarBytes: 0, avatarPosition: null });
   expect(remove).toHaveBeenCalledWith('thumbs', ['thumbs/old.jpg']);
+});
+
+test('a new picture saves its framing on every artist in the folder', async () => {
+  const { repo, photos, ids } = await setup();
+  await setArtistPicture({ repo, photos, artistIds: ids, oldPaths: [], file: small, resize, frame: { x: 0.3, y: 0.6, zoom: 2 } });
+  for (const a of (await repo.loadAll()).artists) expect(a.avatarPosition).toBe('frame:0.3,0.6,2');
+});
+
+test('a new picture without a framing starts centred at zoom 1', async () => {
+  const { repo, photos, ids } = await setup();
+  await setArtistPicture({ repo, photos, artistIds: ids, oldPaths: [], file: small, resize });
+  expect((await repo.loadAll()).artists[0].avatarPosition).toBe('frame:0.5,0.5,1');
+});
+
+test('frame-only edit uploads and deletes nothing', async () => {
+  const { repo, photos, ids } = await setup();
+  const upload = vi.spyOn(photos, 'upload');
+  const remove = vi.spyOn(photos, 'remove');
+  await setArtistFrame({ repo, artistIds: ids, frame: { x: 0.4, y: 0.4, zoom: 1.5 } });
+  expect(upload).not.toHaveBeenCalled();
+  expect(remove).not.toHaveBeenCalled();
+  expect((await repo.loadAll()).artists[0]).toMatchObject({ avatarPath: 'thumbs/old.jpg', avatarPosition: 'frame:0.4,0.4,1.5' });
 });

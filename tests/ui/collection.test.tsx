@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { MemoryPhotoStore, MemoryRepo } from '../../src/data/memoryRepo';
 import { DataProvider } from '../../src/ui/DataProvider';
@@ -172,18 +172,6 @@ function artistRoute(r: MemoryRepo, photos: MemoryPhotoStore, path: string) {
   );
 }
 
-test('artist page offers Change picture; Remove picture only once one is set', async () => {
-  URL.createObjectURL = vi.fn(() => 'blob:x');
-  const plain = await folderRepo(false);
-  artistRoute(plain.r, plain.photos, `/artist/${plain.p.id}`);
-  expect(await screen.findByText('Change picture')).toBeTruthy();
-  expect(screen.queryByText('Remove picture')).toBeNull();
-  cleanup();
-  const pic = await folderRepo(true);
-  artistRoute(pic.r, pic.photos, `/artist/${pic.p.id}`);
-  expect(await screen.findByText('Remove picture')).toBeTruthy();
-});
-
 test('the Unknown artist folder has no picture controls', async () => {
   const { r, photos } = await folderRepo(false);
   artistRoute(r, photos, '/artist/unknown');
@@ -191,7 +179,7 @@ test('the Unknown artist folder has no picture controls', async () => {
   expect(screen.queryByText('Change picture')).toBeNull();
 });
 
-test('a folder with a picture fills the tile', async () => {
+test('a folder with a picture shows it framed', async () => {
   URL.createObjectURL = vi.fn(() => 'blob:x');
   const { r, photos } = await folderRepo(true);
   render(
@@ -200,12 +188,45 @@ test('a folder with a picture fills the tile', async () => {
     </MemoryRouter>,
   );
   await screen.findAllByText('papermilio');
-  await waitFor(() => expect(document.querySelector('.folder-cover.has-picture img')).not.toBeNull());
+  await waitFor(() => expect(document.querySelector('.folder-cover .framed img')).not.toBeNull());
 });
 
-test('the picture file chooser is hidden behind the Change picture button', async () => {
-  const { r, photos, p } = await folderRepo(false);
+function homeWithRoutes(r: MemoryRepo, photos: MemoryPhotoStore) {
+  render(
+    <MemoryRouter>
+      <DataProvider repo={r} photos={photos}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/artist/:id" element={<p>ARTIST</p>} />
+          <Route path="/artist/:id/picture" element={<p>EDITOR</p>} />
+        </Routes>
+      </DataProvider>
+    </MemoryRouter>,
+  );
+}
+
+test('pencil opens the editor', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:x');
+  const { r, photos } = await folderRepo(true);
+  homeWithRoutes(r, photos);
+  fireEvent.click(await screen.findByLabelText('Change picture for papermilio'));
+  expect(await screen.findByText('EDITOR')).toBeTruthy();
+  expect(screen.queryByText('ARTIST')).toBeNull();
+});
+
+test('unknown artist tile has no pencil', async () => {
+  const { r, photos } = await folderRepo(false);
+  homeWithRoutes(r, photos);
+  await screen.findByLabelText('Change picture for papermilio');
+  expect(screen.queryByLabelText('Change picture for Unknown artist')).toBeNull();
+});
+
+test('artist page shows the picture as a banner and has no picture buttons', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:x');
+  const { r, photos, p } = await folderRepo(true);
   artistRoute(r, photos, `/artist/${p.id}`);
-  const input = (await screen.findByText('Change picture')).querySelector('input[type=file]') as HTMLInputElement;
-  expect(input.style.display).toBe('none');
+  await waitFor(() => expect(document.querySelector('.artist-banner img')).not.toBeNull());
+  expect(screen.queryByText('Change picture')).toBeNull();
+  expect(screen.queryByText('Remove picture')).toBeNull();
+  expect(screen.queryByText('Vertical position')).toBeNull();
 });

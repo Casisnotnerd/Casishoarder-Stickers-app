@@ -5,6 +5,7 @@ import { ScrollToTopOnNewPage, SearchStateProvider } from './SearchState';
 import { Collection } from './pages/Collection';
 import { Home } from './pages/Home';
 import { ArtistPage } from './pages/ArtistPage';
+import { ArtistPictureEditor } from './pages/ArtistPictureEditor';
 import { AddOrder } from './pages/AddOrder';
 import { BulkAdd } from './pages/BulkAdd';
 import { AddChoice } from './pages/AddChoice';
@@ -31,6 +32,7 @@ export function Shell({ demo, onSignOut }: { demo: boolean; onSignOut?: () => vo
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/artist/:id" element={<ArtistPage />} />
+          <Route path="/artist/:id/picture" element={<ArtistPictureEditor />} />
           <Route path="/search" element={<Collection searchMode />} />
           <Route path="/add" element={<AddChoice />} />
           <Route path="/add/one" element={<AddOrder />} />

@@ -9,6 +9,7 @@ export interface ArtistFolder {
   name: string;
   artistIds: string[]; // artists with the same name (not merged yet) share one folder
   avatarPath: string | null;
+  avatarPosition: string | null; // framing of avatarPath (see tileFrame.ts)
   owned: number; // sheets with at least 1 copy left
   usedUp: number; // sheets with every copy used
   cover: Sheet | null; // newest sheet still owned, else newest sheet
@@ -22,14 +23,17 @@ export function artistFolders(artists: Artist[], sheets: Sheet[], lines: OrderLi
     const key = normalizeText(a.name) || a.id;
     let f = byName.get(key);
     if (!f) {
-      f = { id: a.id, name: a.name, artistIds: [], avatarPath: null, owned: 0, usedUp: 0, cover: null };
+      f = { id: a.id, name: a.name, artistIds: [], avatarPath: null, avatarPosition: null, owned: 0, usedUp: 0, cover: null };
       byName.set(key, f);
     }
     f.artistIds.push(a.id);
-    f.avatarPath ??= a.avatarPath;
+    if (!f.avatarPath && a.avatarPath) {
+      f.avatarPath = a.avatarPath;
+      f.avatarPosition = a.avatarPosition;
+    }
     folderOf.set(a.id, f);
   }
-  const unknown: ArtistFolder = { id: UNKNOWN_FOLDER, name: 'Unknown artist', artistIds: [], avatarPath: null, owned: 0, usedUp: 0, cover: null };
+  const unknown: ArtistFolder = { id: UNKNOWN_FOLDER, name: 'Unknown artist', artistIds: [], avatarPath: null, avatarPosition: null, owned: 0, usedUp: 0, cover: null };
   const newestOwned = new Map<ArtistFolder, Sheet>();
   for (const s of sheets) {
     const f = (s.artistId && folderOf.get(s.artistId)) || unknown;

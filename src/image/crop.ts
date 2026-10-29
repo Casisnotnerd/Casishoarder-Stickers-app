@@ -22,7 +22,7 @@ export const PHOTO = { maxSide: 1600, quality: 0.82 };
 export const THUMB = { maxSide: 400, quality: 0.75 };
 
 /** Shrinks a picture (e.g. a 12-megapixel phone photo) so its long side is at most `maxSide`. */
-export async function resizeImage(file: Blob, maxSide = 600): Promise<Blob> {
+export async function resizeImage(file: Blob, maxSide = 1200): Promise<Blob> {
   const img = await loadImage(file);
   return cropToJpeg(img, { x: 0, y: 0, w: img.width, h: img.height }, maxSide, 0.85);
 }
